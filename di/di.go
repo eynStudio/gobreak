@@ -12,7 +12,7 @@ type Container interface {
 	MapAs(interface{}, interface{}) Container
 	Set(reflect.Type, reflect.Value) Container
 	Get(reflect.Type) reflect.Value
-	SetParent(Container)
+	SetParent(Container) Container
 }
 
 type container struct {
@@ -121,6 +121,7 @@ func (this *container) Get(t reflect.Type) reflect.Value {
 
 }
 
-func (this *container) SetParent(parent Container) {
+func (this *container) SetParent(parent Container) Container {
 	this.parent = parent
+	return this
 }

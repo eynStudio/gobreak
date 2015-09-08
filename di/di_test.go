@@ -10,13 +10,33 @@ type Test1 struct {
 	Dep2 int    `di`
 }
 
-func Test_Get(t *testing.T) {
-	d := New()
+func Test_DiGet(t *testing.T) {
+	d := New().Map("hi")
+	if !d.Get(reflect.TypeOf("string")).IsValid() {
+		t.Fatal()
+	}
+}
 
-	d.Map("hi")
-	d.Map(13)
+func Test_DiSetParent(t *testing.T) {
+	p := New().Map("hi")
+	d := New().SetParent(p)
+	if !d.Get(reflect.TypeOf("string")).IsValid() {
+		t.Fatal()
+	}
+}
 
-	t.Log(d.Get(reflect.TypeOf("string")).IsValid())
-	t.Log(d.Get(reflect.TypeOf(11)).IsValid())
+func Test_DiApply(t *testing.T) {
+	d := New().Map("hi").Map(11)
+	t1 := Test1{}
+	err := d.Apply(&t1)
 
+	if err != nil {
+		t.Error(err)
+	}
+	if t1.Dep1 != "hi" {
+		t.Fatal()
+	}
+	if t1.Dep2 != 11 {
+		t.Fatal()
+	}
 }
