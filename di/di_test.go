@@ -18,7 +18,7 @@ func Test_DiGet(t *testing.T) {
 }
 
 func Test_DiSetParent(t *testing.T) {
-	p := New().Map("hi")
+	p := Root.Map("hi")
 	d := New().SetParent(p)
 	if !d.Get(reflect.TypeOf("string")).IsValid() {
 		t.Fatal()
@@ -26,7 +26,7 @@ func Test_DiSetParent(t *testing.T) {
 }
 
 func Test_DiApply(t *testing.T) {
-	d := New().Map("hi").Map(11)
+	d := Root.Map("hi").Map(11)
 	t1 := Test1{}
 	err := d.Apply(&t1)
 

@@ -5,6 +5,8 @@ import (
 	"reflect"
 )
 
+var Root Container = New()
+
 type Container interface {
 	Apply(interface{}) error
 	Invoke(interface{}) ([]reflect.Value, error)
