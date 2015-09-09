@@ -80,7 +80,7 @@ func (this *container) Map(val interface{}) Container {
 
 func (this *container) MapAs(val interface{}, ifacePtr interface{}) Container {
 
-	t := reflect.TypeOf(val)
+	t := reflect.TypeOf(ifacePtr)
 
 	for t.Kind() == reflect.Ptr {
 		t = t.Elem()
