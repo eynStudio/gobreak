@@ -10,6 +10,7 @@ var Root Container = New()
 type Container interface {
 	Apply(interface{}) error
 	Invoke(interface{}) ([]reflect.Value, error)
+	Exec(fv reflect.Value, args []reflect.Type) ([]reflect.Value, error)
 	Map(interface{}) Container
 	MapAs(interface{}, interface{}) Container
 	Set(reflect.Type, reflect.Value) Container
@@ -30,19 +31,29 @@ func New() Container {
 
 func (this *container) Invoke(f interface{}) ([]reflect.Value, error) {
 	t := reflect.TypeOf(f)
+	inTypes := GetFuncArgs(t)
+	return this.Exec(reflect.ValueOf(f), inTypes)
+}
 
-	var in = make([]reflect.Value, t.NumIn())
-	for i := 0; i < t.NumIn(); i++ {
-		argType := t.In(i)
-		val := this.Get(argType)
-		if !val.IsValid() {
-			return nil, fmt.Errorf("Value not found for type %v", argType)
-		}
-
-		in[i] = val
+func (this *container) Exec(fv reflect.Value, args []reflect.Type) ([]reflect.Value, error) {
+	vals, err := this.getVals(args)
+	if err != nil {
+		return nil, err
 	}
+	return fv.Call(vals), nil
+}
 
-	return reflect.ValueOf(f).Call(in), nil
+func (this *container) getVals(types []reflect.Type) ([]reflect.Value, error) {
+	l := len(types)
+	vals := make([]reflect.Value, l)
+	for i := 0; i < l; i++ {
+		val := this.Get(types[i])
+		if !val.IsValid() {
+			return nil, fmt.Errorf("Value not found for type %v", types[i])
+		}
+		vals[i] = val
+	}
+	return vals, nil
 }
 
 func (this *container) Apply(val interface{}) error {
