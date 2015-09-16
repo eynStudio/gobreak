@@ -43,6 +43,10 @@ func (this *MgoCtx) setup() {
 	}
 }
 
+func (this *MgoCtx) GetCollection(name string) interface{} {
+	return this.db.C(name)
+}
+
 func loadCfg() (cfg *MgoCfg) {
 	content, err := ioutil.ReadFile("conf/mgo.json")
 	if err != nil {

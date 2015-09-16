@@ -1,6 +1,6 @@
 package db
 
-type DbCtx interface{
+type DbCtx interface {
+	GetCollection(name string) interface{}
 	Shutdown() error
 }
-
