@@ -33,6 +33,10 @@ func (this *MgoRepo) Save(id interface{}, m interface{}) {
 	this.c().UpsertId(str2bson(id), m)
 }
 
+func (this *MgoRepo) Del(id interface{}) {
+	this.c().RemoveId(str2bson(id))
+}
+
 func str2bson(id interface{}) bson.ObjectId {
 	if gobreak.IsString(id) {
 		return bson.ObjectIdHex(id.(string))
