@@ -6,38 +6,43 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
-type MgoRepo struct {
+type MgoRepo interface {
+	Repo
+	C() *mgo.Collection
+}
+
+type mgoRepo struct {
 	Ctx  DbCtx `di`
 	name string
 }
 
-func NewMgoRepo(name string) *MgoRepo {
-	return &MgoRepo{name: name}
+func NewMgoRepo(name string) *mgoRepo {
+	return &mgoRepo{name: name}
 }
 
-func (this *MgoRepo) c() *mgo.Collection {
+func (this *mgoRepo) C() *mgo.Collection {
 	return this.Ctx.GetCollection(this.name).(*mgo.Collection)
 }
 
-func (this *MgoRepo) All(m interface{}) interface{} {
-	this.c().Find(nil).All(m)
+func (this *mgoRepo) All(m interface{}) interface{} {
+	this.C().Find(nil).All(m)
 	return m
 }
 
-func (this *MgoRepo) Get(id interface{}, m interface{}) interface{} {
-	this.c().FindId(str2bson(id)).One(m)
+func (this *mgoRepo) Get(id interface{}, m interface{}) interface{} {
+	this.C().FindId(Str2bson(id)).One(m)
 	return m
 }
 
-func (this *MgoRepo) Save(id interface{}, m interface{}) {
-	this.c().UpsertId(str2bson(id), m)
+func (this *mgoRepo) Save(id interface{}, m interface{}) {
+	this.C().UpsertId(Str2bson(id), m)
 }
 
-func (this *MgoRepo) Del(id interface{}) {
-	this.c().RemoveId(str2bson(id))
+func (this *mgoRepo) Del(id interface{}) {
+	this.C().RemoveId(Str2bson(id))
 }
 
-func str2bson(id interface{}) bson.ObjectId {
+func Str2bson(id interface{}) bson.ObjectId {
 	if gobreak.IsString(id) {
 		return bson.ObjectIdHex(id.(string))
 	} else {
