@@ -43,7 +43,7 @@ func (this *mgoRepo) Del(id interface{}) {
 }
 
 func Str2bson(id interface{}) bson.ObjectId {
-	if gobreak.IsString(id) {
+	if gobreak.IsStrT(id) {
 		return bson.ObjectIdHex(id.(string))
 	} else {
 		return id.(bson.ObjectId)
