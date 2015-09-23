@@ -4,6 +4,7 @@ import (
 	"github.com/eynstudio/gobreak"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
+	"reflect"
 )
 
 type MgoRepo interface {
@@ -43,7 +44,9 @@ func (this *mgoRepo) Del(id interface{}) {
 }
 
 func Str2bson(id interface{}) bson.ObjectId {
-	if gobreak.IsStrT(id) {
+	if reflect.TypeOf(id).Name() == "ObjectId" {
+		return id.(bson.ObjectId)
+	} else if gobreak.IsStrT(id) {
 		return bson.ObjectIdHex(id.(string))
 	} else {
 		return id.(bson.ObjectId)
