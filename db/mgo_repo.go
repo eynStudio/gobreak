@@ -31,16 +31,16 @@ func (this *mgoRepo) All(m interface{}) interface{} {
 }
 
 func (this *mgoRepo) Get(id interface{}, m interface{}) interface{} {
-	this.C().FindId(Str2bson(id)).One(m)
+	this.C().FindId(id).One(m)
 	return m
 }
 
 func (this *mgoRepo) Save(id interface{}, m interface{}) {
-	this.C().UpsertId(Str2bson(id), m)
+	this.C().UpsertId(id, m)
 }
 
 func (this *mgoRepo) Del(id interface{}) {
-	this.C().RemoveId(Str2bson(id))
+	this.C().RemoveId(id)
 }
 
 func Str2bson(id interface{}) bson.ObjectId {
