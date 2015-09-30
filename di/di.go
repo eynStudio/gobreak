@@ -90,17 +90,7 @@ func (this *container) Map(val interface{}) Container {
 }
 
 func (this *container) MapAs(val interface{}, ifacePtr interface{}) Container {
-
-	t := reflect.TypeOf(ifacePtr)
-
-	for t.Kind() == reflect.Ptr {
-		t = t.Elem()
-	}
-
-	if t.Kind() != reflect.Interface {
-		panic("value is not a pointer to an interface. (*Interface)(nil)")
-	}
-
+	t := InterfaceOf(ifacePtr)
 	this.items[t] = reflect.ValueOf(val)
 	return this
 }
