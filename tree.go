@@ -43,6 +43,6 @@ func queryChildren(q linq.Query, prefix string) ([]linq.T, error) {
 		last := strings.TrimPrefix(s.(TreePath).GetUri(), prefix)
 		return strings.HasPrefix(s.(TreePath).GetUri(), prefix) && !strings.Contains(last, "."), nil
 	}).OrderBy(func(a, b linq.T) bool {
-		return a.(TreePath).GetQz() < b.(TreePath).GetQz()
+		return a.(TreePath).GetQz() > b.(TreePath).GetQz()
 	}).Results()
 }
