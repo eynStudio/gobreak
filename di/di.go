@@ -2,17 +2,20 @@ package di
 
 import (
 	"fmt"
+	. "github.com/eynstudio/gobreak"
 	"reflect"
 )
 
 var Root Container = New()
 
 type Container interface {
-	Apply(interface{}) error
-	Invoke(interface{}) ([]reflect.Value, error)
+	Apply(T) error
+	Invoke(T) ([]reflect.Value, error)
 	Exec(fv reflect.Value, args []reflect.Type) ([]reflect.Value, error)
-	Map(interface{}) Container
-	MapAs(interface{}, interface{}) Container
+	ApplyAndMap(T) error
+	ApplyAndMapAs(T, T) error
+	Map(T) Container
+	MapAs(T, T) Container
 	Set(reflect.Type, reflect.Value) Container
 	Get(reflect.Type) reflect.Value
 	SetParent(Container) Container
@@ -29,7 +32,7 @@ func New() Container {
 	}
 }
 
-func (this *container) Invoke(f interface{}) ([]reflect.Value, error) {
+func (this *container) Invoke(f T) ([]reflect.Value, error) {
 	t := reflect.TypeOf(f)
 	inTypes := GetFuncArgs(t)
 	return this.Exec(reflect.ValueOf(f), inTypes)
@@ -56,7 +59,7 @@ func (this *container) getVals(types []reflect.Type) ([]reflect.Value, error) {
 	return vals, nil
 }
 
-func (this *container) Apply(val interface{}) error {
+func (this *container) Apply(val T) error {
 	v := reflect.ValueOf(val)
 
 	for v.Kind() == reflect.Ptr {
@@ -83,13 +86,20 @@ func (this *container) Apply(val interface{}) error {
 	}
 	return nil
 }
+func (this *container) ApplyAndMap(val T) error {
+	return this.Map(val).Apply(val)
+}
 
-func (this *container) Map(val interface{}) Container {
+func (this *container) ApplyAndMapAs(val T, ifacePtr T) error {
+	return this.MapAs(val, ifacePtr).Apply(val)
+}
+
+func (this *container) Map(val T) Container {
 	this.items[reflect.TypeOf(val)] = reflect.ValueOf(val)
 	return this
 }
 
-func (this *container) MapAs(val interface{}, ifacePtr interface{}) Container {
+func (this *container) MapAs(val T, ifacePtr T) Container {
 	t := InterfaceOf(ifacePtr)
 	this.items[t] = reflect.ValueOf(val)
 	return this
@@ -121,7 +131,6 @@ func (this *container) Get(t reflect.Type) reflect.Value {
 	}
 
 	return val
-
 }
 
 func (this *container) SetParent(parent Container) Container {
