@@ -20,15 +20,18 @@ type MgoCfg struct {
 	Pwd    string
 }
 
-func NewMgoCtx() *MgoCtx {
+func NewMgoCtx(cfgFile string) *MgoCtx {
+	if cfgFile == "" {
+		cfgFile = "conf/mgo.json"
+	}
 	ctx := &MgoCtx{}
-	ctx.setup()
+	ctx.setup(cfgFile)
 	return ctx
 }
 
-func (this *MgoCtx) setup() {
+func (this *MgoCtx) setup(cfgFile string) {
 	var err error
-	cfg := loadCfg()
+	cfg := loadCfg(cfgFile)
 
 	if this.session, err = mgo.Dial(cfg.Server); err != nil {
 		log.Error(err, "Dial", "mdb.Startup")
@@ -47,8 +50,8 @@ func (this *MgoCtx) GetCollection(name string) interface{} {
 	return this.db.C(name)
 }
 
-func loadCfg() (cfg *MgoCfg) {
-	content, err := ioutil.ReadFile("conf/mgo.json")
+func loadCfg(cfgFile string) (cfg *MgoCfg) {
+	content, err := ioutil.ReadFile(cfgFile)
 	if err != nil {
 		panic(err)
 	}

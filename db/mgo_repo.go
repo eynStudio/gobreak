@@ -26,7 +26,10 @@ func (this *mgoRepo) C() *mgo.Collection {
 }
 
 func (this *mgoRepo) All(m interface{}) interface{} {
-	this.C().Find(nil).All(m)
+	err:=this.C().Find(nil).All(m)
+	if err!=nil{
+		panic(err)
+	}
 	return m
 }
 
