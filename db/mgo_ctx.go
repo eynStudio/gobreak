@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"io/ioutil"
 
+	. "github.com/eynstudio/gobreak"
 	log "github.com/goinggo/tracelog"
 	"gopkg.in/mgo.v2"
+	"gopkg.in/mgo.v2/bson"
 )
 
 type MgoCtx struct {
@@ -46,8 +48,39 @@ func (this *MgoCtx) setup(cfgFile string) {
 	}
 }
 
-func (this *MgoCtx) GetCollection(name string) interface{} {
-	return this.db.C(name)
+func (p *MgoCtx) GetCollection(name string) T {
+	return p.db.C(name)
+}
+
+func (p *MgoCtx) GetWithFields(c *mgo.Collection, id bson.ObjectId, fields []string, i T) {
+	selector := Fields2BsonM(fields)
+	c.FindId(id).Select(selector).One(i)
+}
+
+func (p *MgoCtx) GetByQWithFields(c *mgo.Collection, q bson.M, fields []string, i T) {
+	selector := Fields2BsonM(fields)
+	c.Find(q).Select(selector).One(i)
+}
+
+func (p *MgoCtx) ListByQWithFields(c *mgo.Collection, q bson.M, fields []string, i T) {
+	selector := Fields2BsonM(fields)
+	c.Find(q).Select(selector).All(i)
+}
+
+func (p *MgoCtx) UpdateSetFiled(c *mgo.Collection, id bson.ObjectId, field string, value T) {
+	p.UpdateSetMap(c, id, bson.M{field: value})
+}
+
+func (p *MgoCtx) UpdateSetMap(c *mgo.Collection, id bson.ObjectId, value bson.M) {
+	c.UpdateId(id, bson.M{"$set": value})
+}
+
+func Fields2BsonM(fields []string) bson.M {
+	selector := make(bson.M, len(fields))
+	for _, field := range fields {
+		selector[field] = true
+	}
+	return selector
 }
 
 func loadCfg(cfgFile string) (cfg *MgoCfg) {
