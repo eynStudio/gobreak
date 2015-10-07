@@ -23,6 +23,9 @@ type PageFilter struct {
 	PerPage int
 }
 
+func (p *PageFilter) Skip() int{
+	return (p.Page-1)*p.PerPage
+}
 type Paging struct {
 	Total   int
 	Items   T
