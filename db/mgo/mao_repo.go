@@ -92,6 +92,16 @@ func (p *mgoRepo) Del(id T) {
 	p.C(sess).RemoveId(id)
 }
 
+func (p *mgoRepo) Clear() error {
+	sess := p.Ctx.CopySession()
+	defer sess.Close()
+
+	if err := p.C(sess).DropCollection(); err != nil {
+		return err
+	}
+	return nil
+}
+
 //func (p *mgoRepo) GetWithFields(id bson.ObjectId, fields []string, i T) {
 //	p.Ctx.(*MgoCtx).GetWithFields(p.C(), id, fields, i)
 //}

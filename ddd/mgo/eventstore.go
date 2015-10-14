@@ -39,7 +39,7 @@ func NewMongoEventStore(eventBus EventBus, eventRepo MgoRepo) (*MongoEventStore,
 }
 
 type mongoAggregateRecord struct {
-	Id      GUID                `bson:"_id"`
+	Id      bson.ObjectId                `bson:"_id"`
 	Version int                 `Version`
 	Events  []*mongoEventRecord `Events`
 	// Type        string        `bson:"type"`
@@ -70,7 +70,7 @@ func (s *MongoEventStore) Save(events []Event) error {
 	for _, event := range events {
 		// Get an existing aggregate, if any.
 		var existing []mongoAggregateRecord
-		err := c.FindId(event.ID()).Select(bson.M{"Version": 1}).Limit(1).All(&existing)
+		err := c.FindId(bson.ObjectIdHex(string(event.ID()))).Select(bson.M{"Version": 1}).Limit(1).All(&existing)
 		if err != nil || len(existing) > 1 {
 			return ErrCouldNotLoadAggregate
 		}
@@ -89,7 +89,7 @@ func (s *MongoEventStore) Save(events []Event) error {
 
 		if len(existing) == 0 {
 			aggregate := mongoAggregateRecord{
-				Id:      event.ID(),
+				Id:     bson.ObjectIdHex(string(event.ID())),
 				Version: 1,
 				Events:  []*mongoEventRecord{r},
 			}
@@ -105,7 +105,7 @@ func (s *MongoEventStore) Save(events []Event) error {
 			// since the query above).
 			err = c.Update(
 				bson.M{
-					"_id":     event.ID(),
+					"_id":     bson.ObjectIdHex(string(event.ID())),
 					"Version": existing[0].Version,
 				},
 				bson.M{
@@ -132,7 +132,7 @@ func (s *MongoEventStore) Load(id GUID) ([]Event, error) {
 	c := s.eventRepo.C(sess)
 
 	var aggregate mongoAggregateRecord
-	err := c.FindId(id).One(&aggregate)
+	err := c.FindId(bson.ObjectIdHex(string(id))).One(&aggregate)
 	if err != nil {
 		return nil, ErrNoEventsFound
 	}

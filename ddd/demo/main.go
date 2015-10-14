@@ -9,7 +9,6 @@ import (
 	"github.com/eynstudio/gobreak/di"
 	"gopkg.in/mgo.v2/bson"
 	"log"
-	"time"
 )
 
 func main() {
@@ -23,6 +22,8 @@ func main() {
 	eventRepo := NewMgoRepo("DomainEvents", NewMongoAggregateRecord)
 	di.Root.Apply(eventRepo)
 
+eventRepo.Clear()
+
 	eventBus := NewEventBus()
 	eventBus.AddGlobalHandler(&LoggerSubscriber{})
 
@@ -33,6 +34,10 @@ func main() {
 		log.Fatalf("could not create repository: %s", err)
 	}
 
+	eventStore.RegisterEventType(&InviteCreated{}, func() Event { return &InviteCreated{} })
+	eventStore.RegisterEventType(&InviteAccepted{}, func() Event { return &InviteAccepted{} })
+	eventStore.RegisterEventType(&InviteDeclined{}, func() Event { return &InviteDeclined{} })
+	
 	repository.RegisterAggregate(&InvitationAggregate{},
 		func(id GUID) Aggregate {
 			return &InvitationAggregate{
@@ -57,6 +62,8 @@ func main() {
 
 	invitationRepository := NewMgoRepo("test_Invitations", func() T { return &Invitation{} })
 	di.Root.Apply(invitationRepository)
+	invitationRepository.Clear()
+	
 	invitationProjector := NewInvitationProjector(invitationRepository)
 	eventBus.AddHandler(invitationProjector, &InviteCreated{})
 	eventBus.AddHandler(invitationProjector, &InviteAccepted{})
@@ -65,6 +72,8 @@ func main() {
 	eventID := NewGuid()
 	guestListRepository := NewMgoRepo("test_guest_lists", func() T { return &GuestList{} })
 	di.Root.Apply(guestListRepository)
+	guestListRepository.Clear()
+	
 	guestListProjector := NewGuestListProjector(guestListRepository, eventID)
 	eventBus.AddHandler(guestListProjector, &InviteCreated{})
 	eventBus.AddHandler(guestListProjector, &InviteAccepted{})
@@ -76,9 +85,7 @@ func main() {
 	// still accepted.
 	athenaID := NewGuid()
 	commandBus.HandleCmd(&CreateInvite{InvitationID: athenaID, Name: "Athena", Age: 42})
-	time.Sleep(2000)
 	commandBus.HandleCmd(&AcceptInvite{InvitationID: athenaID})
-	time.Sleep(2000)
 	err = commandBus.HandleCmd(&DeclineInvite{InvitationID: athenaID})
 	if err != nil {
 		fmt.Printf("error: %s\n", err)
@@ -86,14 +93,12 @@ func main() {
 
 	hadesID := NewGuid()
 	commandBus.HandleCmd(&CreateInvite{InvitationID: hadesID, Name: "Hades", Age: 42})
-	time.Sleep(2000)
 	commandBus.HandleCmd(&AcceptInvite{InvitationID: hadesID})
-	time.Sleep(2000)
+
 	zeusID := NewGuid()
 	commandBus.HandleCmd(&CreateInvite{InvitationID: zeusID, Name: "Zeus", Age: 42})
-	time.Sleep(2000)
 	commandBus.HandleCmd(&DeclineInvite{InvitationID: zeusID})
-	time.Sleep(2000)
+
 	// Read all invites.
 	invitations := invitationRepository.All()
 	for _, i := range invitations {

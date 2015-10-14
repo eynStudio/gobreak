@@ -25,6 +25,7 @@ func (p *eventBus) PublishEvent(event Event) {
 			handler.HandleEvent(event)
 		}
 	}
+	
 	for handler := range p.globalHandlers {
 		handler.HandleEvent(event)
 	}
