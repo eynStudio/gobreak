@@ -1,11 +1,11 @@
 package main
 
 import (
-	. "github.com/eynstudio/gobreak/ddd"
+	. "github.com/eynstudio/gobreak"
 )
 
 type InviteCreated struct {
-	InvitationID GUID   `bson:"_d"`
+	InvitationID GUID   `bson:"_id"`
 	Name         string `Name`
 	Age          int    `Age`
 }

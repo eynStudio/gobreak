@@ -1,7 +1,7 @@
 package main
 
 import (
-	. "github.com/eynstudio/gobreak/ddd"
+	. "github.com/eynstudio/gobreak"
 )
 
 type CreateInvite struct {
