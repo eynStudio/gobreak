@@ -12,20 +12,14 @@ var (
 )
 
 type DomainRepo struct {
-	eventStore EventStore
+	EventStore EventStore 	`di`
 	callbacks  map[string]func(GUID) Aggregate
 }
 
-func NewDomainRepo(eventStore EventStore) (*DomainRepo, error) {
-	if eventStore == nil {
-		return nil, ErrNilEventStore
-	}
-
-	d := &DomainRepo{
-		eventStore: eventStore,
+func NewDomainRepo() *DomainRepo{
+	return &DomainRepo{
 		callbacks:  make(map[string]func(GUID) Aggregate),
-	}
-	return d, nil
+	}	 
 }
 
 func (p *DomainRepo) RegisterAggregate(aggregate Aggregate, callback func(GUID) Aggregate) error {
@@ -45,7 +39,7 @@ func (p *DomainRepo) Load(aggregateType string, id GUID) (Aggregate, error) {
 	}
 
 	aggregate := f(id)
-	events, _ := p.eventStore.Load(aggregate.ID())
+	events, _ := p.EventStore.Load(aggregate.ID())
 	for _, event := range events {
 		aggregate.ApplyEvent(event)
 		aggregate.IncrementVersion()
@@ -58,7 +52,8 @@ func (p *DomainRepo) Save(aggregate Aggregate) error {
 	resultEvents := aggregate.GetUncommittedEvents()
 
 	if len(resultEvents) > 0 {
-		err := p.eventStore.Save(resultEvents)
+		
+		err := p.EventStore.Save(resultEvents)
 		if err != nil {
 			return err
 		}

@@ -2,13 +2,14 @@ package main
 
 import (
 	"fmt"
+	"log"
+
 	. "github.com/eynstudio/gobreak"
 	. "github.com/eynstudio/gobreak/db/mgo"
 	. "github.com/eynstudio/gobreak/ddd"
 	. "github.com/eynstudio/gobreak/ddd/mgo"
 	"github.com/eynstudio/gobreak/di"
 	"gopkg.in/mgo.v2/bson"
-	"log"
 )
 
 func main() {
@@ -22,22 +23,21 @@ func main() {
 	eventRepo := NewMgoRepo("DomainEvents", NewMongoAggregateRecord)
 	di.Root.Apply(eventRepo)
 
-eventRepo.Clear()
+	eventRepo.Clear()
 
 	eventBus := NewEventBus()
 	eventBus.AddGlobalHandler(&LoggerSubscriber{})
 
 	eventStore, _ := NewMongoEventStore(eventBus, eventRepo)
+	di.Root.MapAs(eventStore, (*EventStore)(nil))
 
-	repository, err := NewDomainRepo(eventStore)
-	if err != nil {
-		log.Fatalf("could not create repository: %s", err)
-	}
+	repository := NewDomainRepo()
+	di.Root.Apply(repository)
 
 	eventStore.RegisterEventType(&InviteCreated{}, func() Event { return &InviteCreated{} })
 	eventStore.RegisterEventType(&InviteAccepted{}, func() Event { return &InviteAccepted{} })
 	eventStore.RegisterEventType(&InviteDeclined{}, func() Event { return &InviteDeclined{} })
-	
+
 	repository.RegisterAggregate(&InvitationAggregate{},
 		func(id GUID) Aggregate {
 			return &InvitationAggregate{
@@ -63,7 +63,7 @@ eventRepo.Clear()
 	invitationRepository := NewMgoRepo("test_Invitations", func() T { return &Invitation{} })
 	di.Root.Apply(invitationRepository)
 	invitationRepository.Clear()
-	
+
 	invitationProjector := NewInvitationProjector(invitationRepository)
 	eventBus.AddHandler(invitationProjector, &InviteCreated{})
 	eventBus.AddHandler(invitationProjector, &InviteAccepted{})
@@ -73,7 +73,7 @@ eventRepo.Clear()
 	guestListRepository := NewMgoRepo("test_guest_lists", func() T { return &GuestList{} })
 	di.Root.Apply(guestListRepository)
 	guestListRepository.Clear()
-	
+
 	guestListProjector := NewGuestListProjector(guestListRepository, eventID)
 	eventBus.AddHandler(guestListProjector, &InviteCreated{})
 	eventBus.AddHandler(guestListProjector, &InviteAccepted{})
