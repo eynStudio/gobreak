@@ -7,14 +7,16 @@ type EventHandler interface {
 type EventBus interface {
 	PublishEvent(Event)
 	AddHandler(EventHandler, Event)
+	AddGlobalHandler(EventHandler)
 }
 
 type eventBus struct {
 	eventHandlers  map[string]map[EventHandler]bool
+	globalHandlers map[EventHandler]bool
 }
 
 func NewEventBus() EventBus {
-	return &eventBus{make(map[string]map[EventHandler]bool)}
+	return &eventBus{make(map[string]map[EventHandler]bool), make(map[EventHandler]bool)}
 }
 
 func (p *eventBus) PublishEvent(event Event) {
@@ -22,6 +24,9 @@ func (p *eventBus) PublishEvent(event Event) {
 		for handler := range handlers {
 			handler.HandleEvent(event)
 		}
+	}
+	for handler := range p.globalHandlers {
+		handler.HandleEvent(event)
 	}
 }
 
@@ -32,3 +37,6 @@ func (p *eventBus) AddHandler(handler EventHandler, event Event) {
 	p.eventHandlers[event.EventType()][handler] = true
 }
 
+func (p *eventBus) AddGlobalHandler(handler EventHandler) {
+	p.globalHandlers[handler] = true
+}
