@@ -7,7 +7,7 @@ import (
 type CreateInvite struct {
 	InvitationID GUID
 	Name         string
-	Age          int `eh:"optional"`
+	Age          int
 }
 
 func (c *CreateInvite) ID() GUID        { return c.InvitationID }

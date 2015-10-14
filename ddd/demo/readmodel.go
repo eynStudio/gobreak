@@ -1,6 +1,8 @@
 package main
 
 import (
+	//	"fmt"
+	. "github.com/eynstudio/gobreak/db/mgo"
 	. "github.com/eynstudio/gobreak/ddd"
 )
 
@@ -11,10 +13,10 @@ type Invitation struct {
 }
 
 type InvitationProjector struct {
-	repository ReadRepository
+	repository MgoRepo
 }
 
-func NewInvitationProjector(repository ReadRepository) *InvitationProjector {
+func NewInvitationProjector(repository MgoRepo) *InvitationProjector {
 	p := &InvitationProjector{
 		repository: repository,
 	}
@@ -30,12 +32,12 @@ func (p *InvitationProjector) HandleEvent(event Event) {
 		}
 		p.repository.Save(i.ID, i)
 	case *InviteAccepted:
-		m, _ := p.repository.Find(event.InvitationID)
+		m := p.repository.Get(event.InvitationID)
 		i := m.(*Invitation)
 		i.Status = "accepted"
 		p.repository.Save(i.ID, i)
 	case *InviteDeclined:
-		m, _ := p.repository.Find(event.InvitationID)
+		m := p.repository.Get(event.InvitationID)
 		i := m.(*Invitation)
 		i.Status = "declined"
 		p.repository.Save(i.ID, i)
@@ -49,11 +51,11 @@ type GuestList struct {
 }
 
 type GuestListProjector struct {
-	repository ReadRepository
+	repository MgoRepo
 	eventID    GUID
 }
 
-func NewGuestListProjector(repository ReadRepository, eventID GUID) *GuestListProjector {
+func NewGuestListProjector(repository MgoRepo, eventID GUID) *GuestListProjector {
 	p := &GuestListProjector{
 		repository: repository,
 		eventID:    eventID,
@@ -64,19 +66,19 @@ func NewGuestListProjector(repository ReadRepository, eventID GUID) *GuestListPr
 func (p *GuestListProjector) HandleEvent(event Event) {
 	switch event.(type) {
 	case *InviteCreated:
-		m, _ := p.repository.Find(p.eventID)
+		m := p.repository.Get(p.eventID)
 		if m == nil {
 			m = &GuestList{}
 		}
 		g := m.(*GuestList)
 		p.repository.Save(p.eventID, g)
 	case *InviteAccepted:
-		m, _ := p.repository.Find(p.eventID)
+		m := p.repository.Get(p.eventID)
 		g := m.(*GuestList)
 		g.NumAccepted++
 		p.repository.Save(p.eventID, g)
 	case *InviteDeclined:
-		m, _ := p.repository.Find(p.eventID)
+		m := p.repository.Get(p.eventID)
 		g := m.(*GuestList)
 		g.NumDeclined++
 		p.repository.Save(p.eventID, g)

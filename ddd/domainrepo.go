@@ -2,6 +2,7 @@ package ddd
 
 import (
 	"errors"
+	. "github.com/eynstudio/gobreak"
 )
 
 var (
@@ -10,46 +11,41 @@ var (
 	ErrAggregateNotRegistered     = errors.New("aggregate is not registered")
 )
 
-type Repository interface {
-	Load(string, GUID) (Aggregate, error)
-	Save(Aggregate) error
-}
-
-type CallbackRepository struct {
+type DomainRepo struct {
 	eventStore EventStore
 	callbacks  map[string]func(GUID) Aggregate
 }
 
-func NewCallbackRepository(eventStore EventStore) (*CallbackRepository, error) {
+func NewDomainRepo(eventStore EventStore) (*DomainRepo, error) {
 	if eventStore == nil {
 		return nil, ErrNilEventStore
 	}
 
-	d := &CallbackRepository{
+	d := &DomainRepo{
 		eventStore: eventStore,
 		callbacks:  make(map[string]func(GUID) Aggregate),
 	}
 	return d, nil
 }
 
-func (r *CallbackRepository) RegisterAggregate(aggregate Aggregate, callback func(GUID) Aggregate) error {
-	if _, ok := r.callbacks[aggregate.AggType()]; ok {
+func (p *DomainRepo) RegisterAggregate(aggregate Aggregate, callback func(GUID) Aggregate) error {
+	if _, ok := p.callbacks[aggregate.AggType()]; ok {
 		return ErrAggregateAlreadyRegistered
 	}
 
-	r.callbacks[aggregate.AggType()] = callback
+	p.callbacks[aggregate.AggType()] = callback
 
 	return nil
 }
 
-func (r *CallbackRepository) Load(aggregateType string, id GUID) (Aggregate, error) {
-	f, ok := r.callbacks[aggregateType]
+func (p *DomainRepo) Load(aggregateType string, id GUID) (Aggregate, error) {
+	f, ok := p.callbacks[aggregateType]
 	if !ok {
 		return nil, ErrAggregateNotRegistered
 	}
 
 	aggregate := f(id)
-	events, _ := r.eventStore.Load(aggregate.ID())
+	events, _ := p.eventStore.Load(aggregate.ID())
 	for _, event := range events {
 		aggregate.ApplyEvent(event)
 		aggregate.IncrementVersion()
@@ -58,11 +54,11 @@ func (r *CallbackRepository) Load(aggregateType string, id GUID) (Aggregate, err
 	return aggregate, nil
 }
 
-func (r *CallbackRepository) Save(aggregate Aggregate) error {
+func (p *DomainRepo) Save(aggregate Aggregate) error {
 	resultEvents := aggregate.GetUncommittedEvents()
 
 	if len(resultEvents) > 0 {
-		err := r.eventStore.Save(resultEvents)
+		err := p.eventStore.Save(resultEvents)
 		if err != nil {
 			return err
 		}

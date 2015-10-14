@@ -1,5 +1,9 @@
 package ddd
 
+import (
+	. "github.com/eynstudio/gobreak"
+)
+
 type Aggregate interface {
 	ID() GUID
 	AggType() string

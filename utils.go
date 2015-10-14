@@ -10,8 +10,6 @@ var (
 	ErrNotSlicePtr = errors.New("passed must be slice pointer")
 )
 
-type T interface{}
-
 func Is(t reflect.Value, k reflect.Kind) bool { return t.Type().Kind() == k }
 
 func IsStrT(t T) bool            { return IsStr(reflect.ValueOf(t)) }

@@ -2,6 +2,7 @@ package ddd
 
 import (
 	"errors"
+	. "github.com/eynstudio/gobreak"
 	"time"
 )
 

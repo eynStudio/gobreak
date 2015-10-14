@@ -5,9 +5,9 @@ import (
 )
 
 type InviteCreated struct {
-	InvitationID GUID
-	Name         string
-	Age          int
+	InvitationID GUID   `bson:"_d"`
+	Name         string `Name`
+	Age          int    `Age`
 }
 
 func (c *InviteCreated) ID() GUID          { return c.InvitationID }
