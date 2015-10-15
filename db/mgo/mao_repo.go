@@ -5,7 +5,7 @@ import (
 	. "github.com/eynstudio/gobreak/db"
 	//	. "github.com/eynstudio/gobreak/ddd"
 	"gopkg.in/mgo.v2"
-	//	"gopkg.in/mgo.v2/bson"
+	"gopkg.in/mgo.v2/bson"
 	//	"reflect"
 )
 
@@ -15,11 +15,11 @@ type MgoRepo interface {
 	C(session *mgo.Session) *mgo.Collection
 
 	Page(pf *PageFilter, lst T) (pager Paging)
-	//	GetByQWithFields(q bson.M, fields []string, i T)
-	//	ListByQWithFields(q bson.M, fields []string, i T)
-	//	UpdateSetFiled(id bson.ObjectId, field string, value T)
-	//	UpdateSetMap(id bson.ObjectId, value bson.M)
-	//	GetWithFields(id bson.ObjectId, fields []string, i T)
+	GetByQWithFields(q bson.M, fields []string, i T)
+	ListByQWithFields(q bson.M, fields []string, i T)
+	UpdateSetFiled(id GUID, field string, value T)
+	UpdateSetMap(id GUID, value bson.M)
+	GetWithFields(id GUID, fields []string, i T)
 }
 
 type mgoRepo struct {
@@ -102,22 +102,32 @@ func (p *mgoRepo) Clear() error {
 	return nil
 }
 
-//func (p *mgoRepo) GetWithFields(id bson.ObjectId, fields []string, i T) {
-//	p.Ctx.(*MgoCtx).GetWithFields(p.C(), id, fields, i)
-//}
+func (p *mgoRepo) GetWithFields(id GUID, fields []string, i T) {
+	sess := p.Ctx.CopySession()
+	defer sess.Close()
+	p.Ctx.GetWithFields(p.C(sess), id, fields, i)
+}
 
-//func (p *mgoRepo) GetByQWithFields(q bson.M, fields []string, i T) {
-//	p.Ctx.(*MgoCtx).GetByQWithFields(p.C(), q, fields, i)
-//}
+func (p *mgoRepo) GetByQWithFields(q bson.M, fields []string, i T) {
+	sess := p.Ctx.CopySession()
+	defer sess.Close()
+	p.Ctx.GetByQWithFields(p.C(sess), q, fields, i)
+}
 
-//func (p *mgoRepo) ListByQWithFields(q bson.M, fields []string, i T) {
-//	p.Ctx.(*MgoCtx).ListByQWithFields(p.C(), q, fields, i)
-//}
+func (p *mgoRepo) ListByQWithFields(q bson.M, fields []string, i T) {
+	sess := p.Ctx.CopySession()
+	defer sess.Close()
+	p.Ctx.ListByQWithFields(p.C(sess), q, fields, i)
+}
 
-//func (p *mgoRepo) UpdateSetFiled(id bson.ObjectId, field string, value T) {
-//	p.Ctx.(*MgoCtx).UpdateSetFiled(p.C(), id, field, value)
-//}
+func (p *mgoRepo) UpdateSetFiled(id GUID, field string, value T) {
+	sess := p.Ctx.CopySession()
+	defer sess.Close()
+	p.Ctx.UpdateSetFiled(p.C(sess), id, field, value)
+}
 
-//func (p *mgoRepo) UpdateSetMap(id bson.ObjectId, value bson.M) {
-//	p.Ctx.(*MgoCtx).UpdateSetMap(p.C(), id, value)
-//}
+func (p *mgoRepo) UpdateSetMap(id GUID, value bson.M) {
+	sess := p.Ctx.CopySession()
+	defer sess.Close()
+	p.Ctx.UpdateSetMap(p.C(sess), id, value)
+}
