@@ -10,7 +10,8 @@ type Aggregate interface {
 	Version() int
 	IncrementVersion()
 	HandleCmd(Cmd) error
-	ApplyEvent(events Event)
+	ApplyEvent(events Event) Event
+	GetSnapshot() T
 	StoreEvent(Event)
 	GetUncommittedEvents() []Event
 	ClearUncommittedEvents()
@@ -42,6 +43,7 @@ func (a *AggregateBase) IncrementVersion() {
 }
 
 func (a *AggregateBase) StoreEvent(event Event) {
+	//a.(Aggregate).ApplyEvent(event)
 	a.uncommittedEvents = append(a.uncommittedEvents, event)
 }
 

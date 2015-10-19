@@ -39,11 +39,12 @@ func (p *DomainRepo) Load(aggregateType string, id GUID) (Aggregate, error) {
 	}
 
 	aggregate := f(id)
-	events, _ := p.EventStore.Load(aggregate.ID())
-	for _, event := range events {
-		aggregate.ApplyEvent(event)
-		aggregate.IncrementVersion()
-	}
+	p.EventStore.LoadSnapshot(aggregate)
+//	events, _ := p.EventStore.Load(aggregate.ID())
+//	for _, event := range events {
+//		aggregate.ApplyEvent(event)
+//		aggregate.IncrementVersion()
+//	}
 
 	return aggregate, nil
 }
@@ -57,6 +58,7 @@ func (p *DomainRepo) Save(aggregate Aggregate) error {
 		if err != nil {
 			return err
 		}
+		p.EventStore.SaveSnapshot(aggregate)
 	}
 
 	aggregate.ClearUncommittedEvents()

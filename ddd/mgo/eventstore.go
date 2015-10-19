@@ -2,11 +2,13 @@ package mgo
 
 import (
 	"errors"
+	"time"
+
 	. "github.com/eynstudio/gobreak"
 	. "github.com/eynstudio/gobreak/db/mgo"
 	. "github.com/eynstudio/gobreak/ddd"
+	"github.com/eynstudio/gobreak/di"
 	"gopkg.in/mgo.v2/bson"
-	"time"
 )
 
 var (
@@ -23,16 +25,24 @@ var (
 )
 
 type MongoEventStore struct {
-	eventBus  EventBus
-	eventRepo MgoRepo
-	factories map[string]func() Event
+	eventBus     EventBus
+	eventRepo    MgoRepo
+	snapshotRepo MgoRepo
+	factories    map[string]func() Event
 }
 
-func NewMongoEventStore(eventBus EventBus, eventRepo MgoRepo) (*MongoEventStore, error) {
+func NewMongoEventStore(eventBus EventBus) (*MongoEventStore, error) {
+
+	eventRepo := NewMgoRepo("DomainEvents", NewMongoAggregateRecord)
+	di.Root.Apply(eventRepo)
+	snapshotRepo := NewMgoRepo("DomainSnapshot", NewMongoAggregateRecord)
+	di.Root.Apply(snapshotRepo)
+
 	s := &MongoEventStore{
-		eventBus:  eventBus,
-		factories: make(map[string]func() Event),
-		eventRepo: eventRepo,
+		eventBus:     eventBus,
+		factories:    make(map[string]func() Event),
+		eventRepo:    eventRepo,
+		snapshotRepo: snapshotRepo,
 	}
 
 	return s, nil
@@ -89,7 +99,7 @@ func (s *MongoEventStore) Save(events []Event) error {
 
 		if len(existing) == 0 {
 			aggregate := mongoAggregateRecord{
-				Id:     event.ID(),
+				Id:      event.ID(),
 				Version: 1,
 				Events:  []*mongoEventRecord{r},
 			}
@@ -126,6 +136,17 @@ func (s *MongoEventStore) Save(events []Event) error {
 	return nil
 }
 
+func (s *MongoEventStore) SaveSnapshot(agg Aggregate) error {
+	s.snapshotRepo.Save(agg.ID(),agg.GetSnapshot())
+	return nil
+}
+
+func (s *MongoEventStore) LoadSnapshot(agg Aggregate) error{
+	sess :=s.snapshotRepo.CopySession()
+	defer sess.Close()
+	s.snapshotRepo.C(sess).FindId(agg.ID()).One(agg.GetSnapshot())
+	return nil
+}
 func (s *MongoEventStore) Load(id GUID) ([]Event, error) {
 	sess := s.eventRepo.CopySession()
 	defer sess.Close()

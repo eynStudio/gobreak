@@ -2,71 +2,87 @@ package main
 
 import (
 	"fmt"
+
 	. "github.com/eynstudio/gobreak/ddd"
+		. "github.com/eynstudio/gobreak"
 )
 
-type InvitationAggregate struct {
-	*AggregateBase
+const (
+	InvitationAggType = "Invitation"
+)
 
+type InvitationState struct {
 	name     string
 	age      int
 	accepted bool
 	declined bool
 }
 
+type InvitationAggregate struct {
+	*AggregateBase
+	StateModel InvitationState
+}
+
 func (i *InvitationAggregate) AggType() string {
-	return "Invitation"
+	return InvitationAggType
 }
 
 func (i *InvitationAggregate) HandleCmd(command Cmd) error {
+
 	switch command := command.(type) {
 	case *CreateInvite:
-		i.StoreEvent(&InviteCreated{command.InvitationID, command.Name, command.Age})
+		i.StoreEvent(i.ApplyEvent(&InviteCreated{command.InvitationID, command.Name, command.Age}))
 		return nil
 
 	case *AcceptInvite:
-		if i.name == "" {
+		if i.StateModel.name == "" {
 			return fmt.Errorf("invitee does not exist")
 		}
 
-		if i.declined {
-			return fmt.Errorf("%s already declined", i.name)
+		if i.StateModel.declined {
+			return fmt.Errorf("%s already declined", i.StateModel.name)
 		}
 
-		if i.accepted {
+		if i.StateModel.accepted {
 			return nil
 		}
 
-		i.StoreEvent(&InviteAccepted{i.ID()})
+		i.StoreEvent(i.ApplyEvent(&InviteAccepted{i.ID()}))
 		return nil
 
 	case *DeclineInvite:
-		if i.name == "" {
+		if i.StateModel.name == "" {
 			return fmt.Errorf("invitee does not exist")
 		}
 
-		if i.accepted {
-			return fmt.Errorf("%s already accepted", i.name)
+		if i.StateModel.accepted {
+			return fmt.Errorf("%s already accepted", i.StateModel.name)
 		}
 
-		if i.declined {
+		if i.StateModel.declined {
 			return nil
 		}
 
-		i.StoreEvent(&InviteDeclined{i.ID()})
+		i.StoreEvent(i.ApplyEvent( &InviteDeclined{i.ID()}))
 		return nil
 	}
 	return fmt.Errorf("couldn't handle command")
 }
 
-func (i *InvitationAggregate) ApplyEvent(event Event) {
+func (i *InvitationAggregate) ApplyEvent(event Event) Event {
+	fmt.Println("ApplyEvent",event)
 	switch event := event.(type) {
 	case *InviteCreated:
-		i.name = event.Name
-		i.age = event.Age
+		i.StateModel.name = event.Name
+		i.StateModel.age = event.Age
 	case *InviteAccepted:
-		i.accepted = true
+		i.StateModel.accepted = true
 	case *InviteDeclined:
-		i.declined = true
+		i.StateModel.declined = true
 	}
+	return event
+}
+
+func (i *InvitationAggregate) 	GetSnapshot() T{
+	return &i.StateModel
 }

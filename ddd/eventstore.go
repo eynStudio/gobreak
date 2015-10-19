@@ -14,7 +14,9 @@ var (
 
 type EventStore interface {
 	Save([]Event) error
+	SaveSnapshot(agg Aggregate) error
 	Load(id GUID) ([]Event, error)
+		LoadSnapshot(agg Aggregate) error
 }
 
 type AggregateRecord interface {

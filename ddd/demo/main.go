@@ -20,16 +20,14 @@ func main() {
 		Pwd:    "mis.gs@stu.cn"})
 	di.Root.Map(mgoCtx)
 
-	eventRepo := NewMgoRepo("DomainEvents", NewMongoAggregateRecord)
-	di.Root.Apply(eventRepo)
-
-	eventRepo.Clear()
-
 	eventBus := NewEventBus()
 	eventBus.AddGlobalHandler(&LoggerSubscriber{})
 
-	eventStore, _ := NewMongoEventStore(eventBus, eventRepo)
+	eventStore, _ := NewMongoEventStore(eventBus)
 	di.Root.MapAs(eventStore, (*EventStore)(nil))
+
+
+eventStore.Clear()
 
 	repository := NewDomainRepo()
 	di.Root.Apply(repository)
