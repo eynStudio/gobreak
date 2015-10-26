@@ -7,10 +7,6 @@ import (
 	. "github.com/eynstudio/gobreak/ddd"
 )
 
-const (
-	InvitationAggType = "Invitation"
-)
-
 type InvitationState struct {
 	Name     string `Name`
 	Age      int    `Age`
@@ -28,15 +24,12 @@ func NewInvitationAggregate(id GUID) Aggregate {
 		AggregateBase: NewAggregateBase(id),
 	}
 }
-func (i *InvitationAggregate) AggType() string {
-	return InvitationAggType
-}
 
 func (i *InvitationAggregate) HandleCmd(command Cmd) error {
 
 	switch command := command.(type) {
 	case *CreateInvite:
-		i.StoreEvent(i.ApplyEvent(&InviteCreated{command.InvitationID, command.Name, command.Age}))
+		i.ApplyEvent(&InviteCreated{command.InvitationID, command.Name, command.Age})
 		return nil
 
 	case *AcceptInvite:
@@ -52,7 +45,7 @@ func (i *InvitationAggregate) HandleCmd(command Cmd) error {
 			return nil
 		}
 
-		i.StoreEvent(i.ApplyEvent(&InviteAccepted{i.ID()}))
+		i.ApplyEvent(&InviteAccepted{i.ID()})
 		return nil
 
 	case *DeclineInvite:
@@ -68,13 +61,13 @@ func (i *InvitationAggregate) HandleCmd(command Cmd) error {
 			return nil
 		}
 
-		i.StoreEvent(i.ApplyEvent(&InviteDeclined{i.ID()}))
+		i.ApplyEvent(&InviteDeclined{i.ID()})
 		return nil
 	}
 	return fmt.Errorf("couldn't handle command")
 }
 
-func (i *InvitationAggregate) ApplyEvent(event Event) Event {
+func (i *InvitationAggregate) ApplyEvent(event Event) {
 	switch evt := event.(type) {
 	case *InviteCreated:
 		i.StateModel.Name = evt.Name
@@ -84,7 +77,8 @@ func (i *InvitationAggregate) ApplyEvent(event Event) Event {
 	case *InviteDeclined:
 		i.StateModel.Declined = true
 	}
-	return event
+	i.IncrementVersion()
+	i.StoreEvent(event)
 }
 
 func (i *InvitationAggregate) GetSnapshot() T {

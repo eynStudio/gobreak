@@ -6,11 +6,10 @@ import (
 
 type Aggregate interface {
 	ID() GUID
-	AggType() string
 	Version() int
 	IncrementVersion()
 	HandleCmd(Cmd) error
-	ApplyEvent(events Event) Event
+	ApplyEvent(events Event)
 	GetSnapshot() T
 	StoreEvent(Event)
 	GetUncommittedEvents() []Event
