@@ -12,32 +12,32 @@ var (
 	ErrAggregateNotFound   = errors.New("no aggregate for command")
 )
 
-type CommandFieldError struct {
+type CmdFieldError struct {
 	Field string
 }
 
-func (p CommandFieldError) Error() string {
+func (p CmdFieldError) Error() string {
 	return "missing field: " + p.Field
 }
 
-type AggregateCommandHandler struct {
+type AggregateCmdHandler struct {
 	repository Repository
 	cmdAggMap  map[reflect.Type]reflect.Type
 }
 
-func NewAggregateCommandHandler(repository Repository) (*AggregateCommandHandler, error) {
+func NewAggregateCmdHandler(repository Repository) (*AggregateCmdHandler, error) {
 	if repository == nil {
 		return nil, ErrNilRepository
 	}
 
-	h := &AggregateCommandHandler{
+	h := &AggregateCmdHandler{
 		repository: repository,
 		cmdAggMap:  make(map[reflect.Type]reflect.Type),
 	}
 	return h, nil
 }
 
-func (p *AggregateCommandHandler) SetAggregate(agg Aggregate) error {
+func (p *AggregateCmdHandler) SetAggregate(agg Aggregate) error {
 	aggType := reflect.TypeOf(agg)
 	for _, c := range agg.RegistedCmds() {
 		cmdType:=reflect.TypeOf(c)
@@ -49,12 +49,12 @@ func (p *AggregateCommandHandler) SetAggregate(agg Aggregate) error {
 	return nil
 }
 
-func (p *AggregateCommandHandler) CanHandleCmd(cmd Cmd) bool {
+func (p *AggregateCmdHandler) CanHandleCmd(cmd Cmd) bool {
 	_, ok := p.cmdAggMap[reflect.TypeOf(cmd)]
 	return ok
 }
 
-func (p *AggregateCommandHandler) HandleCmd(cmd Cmd) error {
+func (p *AggregateCmdHandler) HandleCmd(cmd Cmd) error {
 	err := p.checkCmd(cmd)
 	if err != nil {
 		return err
@@ -82,7 +82,7 @@ func (p *AggregateCommandHandler) HandleCmd(cmd Cmd) error {
 	return nil
 }
 
-func (p *AggregateCommandHandler) checkCmd(cmd Cmd) error {
+func (p *AggregateCmdHandler) checkCmd(cmd Cmd) error {
 	rv := reflect.Indirect(reflect.ValueOf(cmd))
 	rt := rv.Type()
 
@@ -98,7 +98,7 @@ func (p *AggregateCommandHandler) checkCmd(cmd Cmd) error {
 		}
 
 		if isZero(rv.Field(i)) {
-			return CommandFieldError{field.Name}
+			return CmdFieldError{field.Name}
 		}
 	}
 	return nil

@@ -38,7 +38,7 @@ func main() {
 
 	repository.RegisterAggregate(&InvitationAggregate{}, NewInvitationAggregate)
 
-	handler, err := NewAggregateCommandHandler(repository)
+	handler, err := NewAggregateCmdHandler(repository)
 	handler.SetAggregate(&InvitationAggregate{})
 
 	commandBus := NewCmdBus()

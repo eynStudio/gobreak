@@ -7,10 +7,12 @@ import (
 type EventHandler interface {
 	HandleEvent(Event)
 }
+
 type RegistedEventsHandler interface {
 	HandleEvent(Event)
 	RegistedEvents() []Event
 }
+
 type EventBus interface {
 	PublishEvent(Event)
 	AddHandler(RegistedEventsHandler, ...Event)
