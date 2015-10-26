@@ -37,29 +37,14 @@ func NewAggregateCommandHandler(repository Repository) (*AggregateCommandHandler
 	return h, nil
 }
 
-func (h *AggregateCommandHandler) SetAggregate(aggregate Aggregate, cmd Cmd) error {
-	if _, ok := h.aggregates[cmd.CmdType()]; ok {
-		return ErrAggregateAlreadySet
-	}
-
-	h.aggregates[cmd.CmdType()] = aggregate.AggType()
-	return nil
-}
-
 func (h *AggregateCommandHandler) HandleCmd(cmd Cmd) error {
 	err := h.checkCmd(cmd)
 	if err != nil {
 		return err
 	}
 
-	var aggregateType string
-	var ok bool
-	if aggregateType, ok = h.aggregates[cmd.CmdType()]; !ok {
-		return ErrAggregateNotFound
-	}
-
 	var aggregate Aggregate
-	if aggregate, err = h.repository.Load(aggregateType, cmd.ID()); err != nil {
+	if aggregate, err = h.repository.Load(cmd.AggType(), cmd.ID()); err != nil {
 		return err
 	}
 

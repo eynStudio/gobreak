@@ -7,7 +7,7 @@ import (
 	. "github.com/eynstudio/gobreak"
 	. "github.com/eynstudio/gobreak/db/mgo"
 	. "github.com/eynstudio/gobreak/ddd"
-	//	. "github.com/eynstudio/gobreak/ddd/mgo"
+	. "github.com/eynstudio/gobreak/ddd/mgo"
 	"github.com/eynstudio/gobreak/di"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -24,10 +24,10 @@ func main() {
 	eventBus.AddGlobalHandler(&LoggerSubscriber{})
 
 	// ---- use memory eventstore ----
-	eventStore := NewMemoryEventStore(eventBus)
+	//	eventStore := NewMemoryEventStore(eventBus)
 	// ---- use mgo eventstore ----
-	//	eventStore, _ := NewMongoEventStore(eventBus)
-	//	eventStore.Clear()
+	eventStore, _ := NewMongoEventStore(eventBus)
+	eventStore.Clear()
 	// ---- end ----
 
 	di.Root.MapAs(eventStore, (*EventStore)(nil))
@@ -41,10 +41,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("could not create command handler: %s", err)
 	}
-
-	handler.SetAggregate(&InvitationAggregate{}, &CreateInvite{})
-	handler.SetAggregate(&InvitationAggregate{}, &AcceptInvite{})
-	handler.SetAggregate(&InvitationAggregate{}, &DeclineInvite{})
 
 	commandBus := NewCmdBus()
 	commandBus.SetHandler(handler, &CreateInvite{})
