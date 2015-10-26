@@ -7,7 +7,7 @@ import (
 	. "github.com/eynstudio/gobreak"
 	. "github.com/eynstudio/gobreak/db/mgo"
 	. "github.com/eynstudio/gobreak/ddd"
-	. "github.com/eynstudio/gobreak/ddd/mgo"
+	//	. "github.com/eynstudio/gobreak/ddd/mgo"
 	"github.com/eynstudio/gobreak/di"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -23,26 +23,19 @@ func main() {
 	eventBus := NewEventBus()
 	eventBus.AddGlobalHandler(&LoggerSubscriber{})
 
-	eventStore, _ := NewMongoEventStore(eventBus)
+	// ---- use memory eventstore ----
+	eventStore := NewMemoryEventStore(eventBus)
+	// ---- use mgo eventstore ----
+	//	eventStore, _ := NewMongoEventStore(eventBus)
+	//	eventStore.Clear()
+	// ---- end ----
+
 	di.Root.MapAs(eventStore, (*EventStore)(nil))
-
-
-eventStore.Clear()
 
 	repository := NewDomainRepo()
 	di.Root.Apply(repository)
 
-	eventStore.RegisterEventType(&InviteCreated{}, func() Event { return &InviteCreated{} })
-	eventStore.RegisterEventType(&InviteAccepted{}, func() Event { return &InviteAccepted{} })
-	eventStore.RegisterEventType(&InviteDeclined{}, func() Event { return &InviteDeclined{} })
-
-	repository.RegisterAggregate(&InvitationAggregate{},
-		func(id GUID) Aggregate {
-			return &InvitationAggregate{
-				AggregateBase: NewAggregateBase(id),
-			}
-		},
-	)
+	repository.RegisterAggregate(&InvitationAggregate{}, NewInvitationAggregate)
 
 	handler, err := NewAggregateCommandHandler(repository)
 	if err != nil {

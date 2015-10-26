@@ -2,26 +2,18 @@ package mgo
 
 import (
 	"errors"
-	"time"
-
 	. "github.com/eynstudio/gobreak"
 	. "github.com/eynstudio/gobreak/db/mgo"
 	. "github.com/eynstudio/gobreak/ddd"
 	"github.com/eynstudio/gobreak/di"
 	"gopkg.in/mgo.v2/bson"
+	"reflect"
+	"time"
 )
 
 var (
-	ErrCouldNotDialDB         = errors.New("could not dial database")
-	ErrNoDBSession            = errors.New("no database session")
-	ErrCouldNotClearDB        = errors.New("could not clear database")
-	ErrEventNotRegistered     = errors.New("event not registered")
-	ErrModelNotSet            = errors.New("model not set")
-	ErrCouldNotMarshalEvent   = errors.New("could not marshal event")
-	ErrCouldNotUnmarshalEvent = errors.New("could not unmarshal event")
-	ErrCouldNotLoadAggregate  = errors.New("could not load aggregate")
-	ErrCouldNotSaveAggregate  = errors.New("could not save aggregate")
-	ErrInvalidEvent           = errors.New("invalid event")
+	ErrCouldNotClearDB      = errors.New("could not clear database")
+	ErrCouldNotMarshalEvent = errors.New("could not marshal event")
 )
 
 type MongoEventStore struct {
@@ -33,9 +25,9 @@ type MongoEventStore struct {
 
 func NewMongoEventStore(eventBus EventBus) (*MongoEventStore, error) {
 
-	eventRepo := NewMgoRepo("DomainEvents", NewMongoAggregateRecord)
+	eventRepo := NewMgoRepo("SysAggEvent", nil)
 	di.Root.Apply(eventRepo)
-	snapshotRepo := NewMgoRepo("DomainSnapshot", NewMongoAggregateRecord)
+	snapshotRepo := NewMgoRepo("SysAggSnapshot", nil)
 	di.Root.Apply(snapshotRepo)
 
 	s := &MongoEventStore{
@@ -48,29 +40,17 @@ func NewMongoEventStore(eventBus EventBus) (*MongoEventStore, error) {
 	return s, nil
 }
 
-type mongoAggregateRecord struct {
-	Id      GUID                `bson:"_id"`
-	Version int                 `Version`
-	Events  []*mongoEventRecord `Events`
-	// Type        string        `bson:"type"`
-	// Snapshot    bson.Raw      `bson:"snapshot"`
+type sysDomainEvent struct {
+	AggId GUID      `Id`
+	Time  time.Time `Time`
+	Type  string    `Type`
+	Data  bson.Raw  `Data`
 }
 
-func NewMongoAggregateRecord() T {
-	return &mongoAggregateRecord{}
-}
-
-type mongoEventRecord struct {
-	Type      string    `Type`
-	Version   int       `Version`
-	Timestamp time.Time `Timestamp`
-	Event     Event     `bson:"-"`
-	Data      bson.Raw  `Data`
-}
-
-func (s *MongoEventStore) Save(events []Event) error {
+func (s *MongoEventStore) Save(agg Aggregate) error {
+	events := agg.GetUncommittedEvents()
 	if len(events) == 0 {
-		return ErrNoEventsToAppend
+		return nil
 	}
 
 	sess := s.eventRepo.CopySession()
@@ -78,126 +58,47 @@ func (s *MongoEventStore) Save(events []Event) error {
 	c := s.eventRepo.C(sess)
 
 	for _, event := range events {
-		// Get an existing aggregate, if any.
-		var existing []mongoAggregateRecord
-		err := c.FindId(event.ID()).Select(bson.M{"Version": 1}).Limit(1).All(&existing)
-		if err != nil || len(existing) > 1 {
-			return ErrCouldNotLoadAggregate
-		}
 
 		var data []byte
+		var err error
 		if data, err = bson.Marshal(event); err != nil {
 			return ErrCouldNotMarshalEvent
 		}
 
-		r := &mongoEventRecord{
-			Type:      event.EventType(),
-			Version:   1,
-			Timestamp: time.Now(),
-			Data:      bson.Raw{3, data},
+		r := &sysDomainEvent{
+			AggId: event.ID(),
+			Type:  reflect.TypeOf(event).String(),
+			Time:  time.Now(),
+			Data:  bson.Raw{3, data},
 		}
 
-		if len(existing) == 0 {
-			aggregate := mongoAggregateRecord{
-				Id:      event.ID(),
-				Version: 1,
-				Events:  []*mongoEventRecord{r},
-			}
-
-			if err := c.Insert(aggregate); err != nil {
-				return ErrCouldNotSaveAggregate
-			}
-		} else {
-			r.Version = existing[0].Version + 1
-
-			// Increment aggregate version on insert of new event record, and
-			// only insert if version of aggregate is matching (ie not changed
-			// since the query above).
-			err = c.Update(
-				bson.M{
-					"_id":     event.ID(),
-					"Version": existing[0].Version,
-				},
-				bson.M{
-					"$push": bson.M{"Events": r},
-					"$inc":  bson.M{"Version": 1},
-				},
-			)
-			if err != nil {
-				return ErrCouldNotSaveAggregate
-			}
-		}
+		c.Insert(r)
 
 		if s.eventBus != nil {
 			s.eventBus.PublishEvent(event)
 		}
 	}
 
+	s.snapshotRepo.Save(agg.ID(), agg.GetSnapshot())
+	agg.ClearUncommittedEvents()
 	return nil
 }
 
-func (s *MongoEventStore) SaveSnapshot(agg Aggregate) error {
-	s.snapshotRepo.Save(agg.ID(),agg.GetSnapshot())
-	return nil
-}
-
-func (s *MongoEventStore) LoadSnapshot(agg Aggregate) error{
-	sess :=s.snapshotRepo.CopySession()
+func (s *MongoEventStore) Load(agg Aggregate) (Aggregate, error) {
+	sess := s.snapshotRepo.CopySession()
 	defer sess.Close()
 	s.snapshotRepo.C(sess).FindId(agg.ID()).One(agg.GetSnapshot())
-	return nil
-}
-func (s *MongoEventStore) Load(id GUID) ([]Event, error) {
-	sess := s.eventRepo.CopySession()
-	defer sess.Close()
-	c := s.eventRepo.C(sess)
-
-	var aggregate mongoAggregateRecord
-	err := c.FindId(id).One(&aggregate)
-	if err != nil {
-		return nil, ErrNoEventsFound
-	}
-
-	events := make([]Event, len(aggregate.Events))
-	for i, record := range aggregate.Events {
-		f, ok := s.factories[record.Type]
-		if !ok {
-			return nil, ErrEventNotRegistered
-		}
-
-		event := f()
-		if err := record.Data.Unmarshal(event); err != nil {
-			return nil, ErrCouldNotUnmarshalEvent
-		}
-		if events[i], ok = event.(Event); !ok {
-			return nil, ErrInvalidEvent
-		}
-
-		record.Event = events[i]
-		record.Data = bson.Raw{}
-	}
-
-	return events, nil
-}
-
-// RegisterEventType registers an event factory for a event type. The factory is
-// used to create concrete event types when loading from the database.
-//
-// An example would be:
-//     eventStore.RegisterEventType(&MyEvent{}, func() Event { return &MyEvent{} })
-func (s *MongoEventStore) RegisterEventType(event Event, factory func() Event) error {
-	if _, ok := s.factories[event.EventType()]; ok {
-		return ErrHandlerExist
-	}
-
-	s.factories[event.EventType()] = factory
-	return nil
+	return agg, nil
 }
 
 func (s *MongoEventStore) Clear() error {
 	sess := s.eventRepo.CopySession()
 	defer sess.Close()
 	c := s.eventRepo.C(sess)
+	if err := c.DropCollection(); err != nil {
+		return ErrCouldNotClearDB
+	}
+	c = s.snapshotRepo.C(sess)
 	if err := c.DropCollection(); err != nil {
 		return ErrCouldNotClearDB
 	}

@@ -20,15 +20,6 @@ func (c CommandFieldError) Error() string {
 	return "missing field: " + c.Field
 }
 
-// AggregateCommandHandler dispatches commands to registered aggregates.
-//
-// The dispatch process is as follows:
-// 1. The handler receives a command
-// 2. An aggregate is created or rebuilt from previous events by the repository
-// 3. The aggregate's command handler is called
-// 4. The aggregate stores events in response to the command
-// 5. The new events are stored in the event store by the repository
-// 6. The events are published to the event bus when stored by the event store
 type AggregateCommandHandler struct {
 	repository Repository
 	aggregates map[string]string

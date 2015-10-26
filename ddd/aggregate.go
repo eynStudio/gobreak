@@ -15,6 +15,7 @@ type Aggregate interface {
 	StoreEvent(Event)
 	GetUncommittedEvents() []Event
 	ClearUncommittedEvents()
+	HasUncommittedEvents() bool
 }
 
 type AggregateBase struct {
@@ -43,12 +44,15 @@ func (a *AggregateBase) IncrementVersion() {
 }
 
 func (a *AggregateBase) StoreEvent(event Event) {
-	//a.(Aggregate).ApplyEvent(event)
 	a.uncommittedEvents = append(a.uncommittedEvents, event)
 }
 
 func (a *AggregateBase) GetUncommittedEvents() []Event {
 	return a.uncommittedEvents
+}
+
+func (a *AggregateBase) HasUncommittedEvents() bool {
+	return len(a.uncommittedEvents) > 0
 }
 
 func (a *AggregateBase) ClearUncommittedEvents() {
