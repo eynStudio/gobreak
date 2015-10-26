@@ -9,6 +9,7 @@ type Aggregate interface {
 	Version() int
 	IncrementVersion()
 	HandleCmd(Cmd) error
+		RegistedCmds() []Cmd
 	ApplyEvent(events Event)
 	GetSnapshot() T
 	StoreEvent(Event)

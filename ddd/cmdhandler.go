@@ -37,9 +37,9 @@ func NewAggregateCommandHandler(repository Repository) (*AggregateCommandHandler
 	return h, nil
 }
 
-func (p *AggregateCommandHandler) SetAggregateCmds(agg Aggregate, cmds...Cmd) error {
+func (p *AggregateCommandHandler) SetAggregate(agg Aggregate) error {
 	aggType := reflect.TypeOf(agg)
-	for _, c := range cmds {
+	for _, c := range agg.RegistedCmds() {
 		cmdType:=reflect.TypeOf(c)
 		if _, ok := p.cmdAggMap[cmdType];ok {
 			return ErrAggregateAlreadySet

@@ -25,6 +25,10 @@ func NewInvitationAggregate(id GUID) Aggregate {
 	}
 }
 
+func (i *InvitationAggregate) RegistedCmds() []Cmd {
+	return []Cmd{&CreateInvite{}, &AcceptInvite{}, &DeclineInvite{}}
+}
+
 func (i *InvitationAggregate) HandleCmd(command Cmd) error {
 
 	switch command := command.(type) {

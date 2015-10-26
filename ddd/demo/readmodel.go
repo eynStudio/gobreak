@@ -23,7 +23,9 @@ func NewInvitationProjector(repository MgoRepo) *InvitationProjector {
 	}
 	return p
 }
-
+func (p *InvitationProjector) RegistedEvents() []Event {
+	return []Event{ &InviteCreated{}, &InviteAccepted{},		&InviteDeclined{}}
+}
 func (p *InvitationProjector) HandleEvent(event Event) {
 	switch event := event.(type) {
 	case *InviteCreated:
@@ -62,6 +64,9 @@ func NewGuestListProjector(repository MgoRepo, eventID GUID) *GuestListProjector
 		eventID:    eventID,
 	}
 	return p
+}
+func (p *GuestListProjector) RegistedEvents() []Event {
+	return []Event{ &InviteCreated{}, &InviteAccepted{}, &InviteDeclined{}}
 }
 
 func (p *GuestListProjector) HandleEvent(event Event) {

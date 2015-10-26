@@ -7,10 +7,13 @@ import (
 type EventHandler interface {
 	HandleEvent(Event)
 }
-
+type RegistedEventsHandler interface {
+	HandleEvent(Event)
+	RegistedEvents() []Event
+}
 type EventBus interface {
 	PublishEvent(Event)
-	AddHandler(EventHandler, ...Event)
+	AddHandler(RegistedEventsHandler, ...Event)
 	AddGlobalHandler(EventHandler)
 }
 
@@ -36,14 +39,18 @@ func (p *eventBus) PublishEvent(event Event) {
 	}
 }
 
-func (p *eventBus) AddHandler(handler EventHandler, events ...Event) {
-	for _, event := range events {
-		evtType := reflect.TypeOf(event)
-		if _, ok := p.eventHandlers[evtType]; !ok {
-			p.eventHandlers[evtType] = make(map[EventHandler]bool)
+func (p *eventBus) AddHandler(handler RegistedEventsHandler, events ...Event) {
+	addEvents := func(lst []Event) {
+		for _, event := range lst {
+			evtType := reflect.TypeOf(event)
+			if _, ok := p.eventHandlers[evtType]; !ok {
+				p.eventHandlers[evtType] = make(map[EventHandler]bool)
+			}
+			p.eventHandlers[evtType][handler] = true
 		}
-		p.eventHandlers[evtType][handler] = true
 	}
+	addEvents(handler.RegistedEvents())
+	addEvents(events)
 }
 
 func (p *eventBus) AddGlobalHandler(handler EventHandler) {

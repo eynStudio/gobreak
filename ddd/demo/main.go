@@ -39,7 +39,7 @@ func main() {
 	repository.RegisterAggregate(&InvitationAggregate{}, NewInvitationAggregate)
 
 	handler, err := NewAggregateCommandHandler(repository)
-	handler.SetAggregateCmds(&InvitationAggregate{}, &CreateInvite{}, &AcceptInvite{}, &DeclineInvite{})
+	handler.SetAggregate(&InvitationAggregate{})
 
 	commandBus := NewCmdBus()
 	commandBus.SetHandler(handler)
@@ -49,8 +49,7 @@ func main() {
 	invitationRepository.Clear()
 
 	invitationProjector := NewInvitationProjector(invitationRepository)
-	eventBus.AddHandler(invitationProjector, &InviteCreated{}, &InviteAccepted{},
-		&InviteDeclined{})
+	eventBus.AddHandler(invitationProjector)
 
 	eventID := NewGuid()
 	guestListRepository := NewMgoRepo("test_guest_lists", func() T { return &GuestList{} })
@@ -58,7 +57,7 @@ func main() {
 	guestListRepository.Clear()
 
 	guestListProjector := NewGuestListProjector(guestListRepository, eventID)
-	eventBus.AddHandler(guestListProjector, &InviteCreated{}, &InviteAccepted{}, &InviteDeclined{})
+	eventBus.AddHandler(guestListProjector)
 
 
 	// Issue some invitations and responses.
