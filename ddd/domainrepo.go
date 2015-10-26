@@ -29,7 +29,6 @@ func (p *DomainRepo) RegisterAggregate(aggregate Aggregate, callback func(GUID) 
 	}
 
 	p.callbacks[aggType] = callback
-
 	return nil
 }
 
@@ -39,7 +38,6 @@ func (p *DomainRepo) Load(aggregateType reflect.Type, id GUID) (Aggregate, error
 	} else {
 		return nil, ErrAggregateNotRegistered
 	}
-
 }
 
 func (p *DomainRepo) Save(aggregate Aggregate) error {

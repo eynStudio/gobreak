@@ -37,21 +37,16 @@ func NewAggregateCommandHandler(repository Repository) (*AggregateCommandHandler
 	return h, nil
 }
 
-func (p *AggregateCommandHandler) SetAggregateCmd(aggregate Aggregate, cmd Cmd) error {
-	if _, ok := p.cmdAggMap[reflect.TypeOf(cmd)]; ok {
-		return ErrAggregateAlreadySet
-	}
-
-	p.cmdAggMap[reflect.TypeOf(cmd)] = reflect.TypeOf(aggregate)
-	return nil
-}
-
-func (p *AggregateCommandHandler) SetAggregateCmds(aggregate Aggregate, cmds ...Cmd) error {
-	var err error
+func (p *AggregateCommandHandler) SetAggregateCmds(agg Aggregate, cmds...Cmd) error {
+	aggType := reflect.TypeOf(agg)
 	for _, c := range cmds {
-		err = p.SetAggregateCmd(aggregate, c)
+		cmdType:=reflect.TypeOf(c)
+		if _, ok := p.cmdAggMap[cmdType];ok {
+			return ErrAggregateAlreadySet
+		}
+		p.cmdAggMap[cmdType] = aggType
 	}
-	return err
+	return nil
 }
 
 func (p *AggregateCommandHandler) CanHandleCmd(cmd Cmd) bool {

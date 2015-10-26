@@ -13,8 +13,8 @@ type Cmd interface {
 
 type Event interface {
 	ID() GUID
-	AggType() string
-	EventType() string
+//	AggType() string
+//	EventType() string
 }
 
 type Repository interface {

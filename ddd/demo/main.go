@@ -49,9 +49,8 @@ func main() {
 	invitationRepository.Clear()
 
 	invitationProjector := NewInvitationProjector(invitationRepository)
-	eventBus.AddHandler(invitationProjector, &InviteCreated{})
-	eventBus.AddHandler(invitationProjector, &InviteAccepted{})
-	eventBus.AddHandler(invitationProjector, &InviteDeclined{})
+	eventBus.AddHandler(invitationProjector, &InviteCreated{}, &InviteAccepted{},
+		&InviteDeclined{})
 
 	eventID := NewGuid()
 	guestListRepository := NewMgoRepo("test_guest_lists", func() T { return &GuestList{} })
@@ -59,9 +58,8 @@ func main() {
 	guestListRepository.Clear()
 
 	guestListProjector := NewGuestListProjector(guestListRepository, eventID)
-	eventBus.AddHandler(guestListProjector, &InviteCreated{})
-	eventBus.AddHandler(guestListProjector, &InviteAccepted{})
-	eventBus.AddHandler(guestListProjector, &InviteDeclined{})
+	eventBus.AddHandler(guestListProjector, &InviteCreated{}, &InviteAccepted{}, &InviteDeclined{})
+
 
 	// Issue some invitations and responses.
 	// Note that Athena tries to decline the event, but that is not allowed

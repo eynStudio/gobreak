@@ -5,27 +5,21 @@ import (
 )
 
 type InviteCreated struct {
-	InvitationID GUID   `bson:"_id"`
-	Name         string `Name`
-	Age          int    `Age`
+	InvitationID GUID
+	Name         string
+	Age          int
 }
 
-func (c *InviteCreated) ID() GUID          { return c.InvitationID }
-func (c *InviteCreated) AggType() string   { return "Invitation" }
-func (c *InviteCreated) EventType() string { return "InviteCreated" }
+func (c *InviteCreated) ID() GUID { return c.InvitationID }
 
 type InviteAccepted struct {
 	InvitationID GUID
 }
 
-func (c *InviteAccepted) ID() GUID          { return c.InvitationID }
-func (c *InviteAccepted) AggType() string   { return "Invitation" }
-func (c *InviteAccepted) EventType() string { return "InviteAccepted" }
+func (c *InviteAccepted) ID() GUID { return c.InvitationID }
 
 type InviteDeclined struct {
 	InvitationID GUID
 }
 
-func (c *InviteDeclined) ID() GUID          { return c.InvitationID }
-func (c *InviteDeclined) AggType() string   { return "Invitation" }
-func (c *InviteDeclined) EventType() string { return "InviteDeclined" }
+func (c *InviteDeclined) ID() GUID { return c.InvitationID }

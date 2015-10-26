@@ -1,6 +1,7 @@
 package ddd
 
 import (
+	"reflect"
 	"errors"
 	. "github.com/eynstudio/gobreak"
 	"time"
@@ -47,7 +48,7 @@ func (s *MemoryEventStore) Save(agg Aggregate) error {
 	events := agg.GetUncommittedEvents()
 	for _, event := range events {
 		r := &memoryEventRecord{
-			eventType: event.EventType(),
+			eventType: reflect.TypeOf(event).String(),
 			timestamp: time.Now(),
 			event:     event,
 		}

@@ -1,41 +1,49 @@
 package ddd
 
+import (
+	"reflect"
+)
+
 type EventHandler interface {
 	HandleEvent(Event)
 }
 
 type EventBus interface {
 	PublishEvent(Event)
-	AddHandler(EventHandler, Event)
+	AddHandler(EventHandler, ...Event)
 	AddGlobalHandler(EventHandler)
 }
 
 type eventBus struct {
-	eventHandlers  map[string]map[EventHandler]bool
+	eventHandlers  map[reflect.Type]map[EventHandler]bool
 	globalHandlers map[EventHandler]bool
 }
 
 func NewEventBus() EventBus {
-	return &eventBus{make(map[string]map[EventHandler]bool), make(map[EventHandler]bool)}
+	return &eventBus{make(map[reflect.Type]map[EventHandler]bool),
+		make(map[EventHandler]bool)}
 }
 
 func (p *eventBus) PublishEvent(event Event) {
-	if handlers, ok := p.eventHandlers[event.EventType()]; ok {
+	if handlers, ok := p.eventHandlers[reflect.TypeOf(event)]; ok {
 		for handler := range handlers {
 			handler.HandleEvent(event)
 		}
 	}
-	
+
 	for handler := range p.globalHandlers {
 		handler.HandleEvent(event)
 	}
 }
 
-func (p *eventBus) AddHandler(handler EventHandler, event Event) {
-	if _, ok := p.eventHandlers[event.EventType()]; !ok {
-		p.eventHandlers[event.EventType()] = make(map[EventHandler]bool)
+func (p *eventBus) AddHandler(handler EventHandler, events ...Event) {
+	for _, event := range events {
+		evtType := reflect.TypeOf(event)
+		if _, ok := p.eventHandlers[evtType]; !ok {
+			p.eventHandlers[evtType] = make(map[EventHandler]bool)
+		}
+		p.eventHandlers[evtType][handler] = true
 	}
-	p.eventHandlers[event.EventType()][handler] = true
 }
 
 func (p *eventBus) AddGlobalHandler(handler EventHandler) {
