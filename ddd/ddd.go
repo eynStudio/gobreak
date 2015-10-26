@@ -2,12 +2,13 @@ package ddd
 
 import (
 	. "github.com/eynstudio/gobreak"
+	"reflect"
 )
 
 type Cmd interface {
 	ID() GUID
-	AggType() string
-	CmdType() string
+	//	AggType() string
+	//	CmdType() string
 }
 
 type Event interface {
@@ -17,6 +18,6 @@ type Event interface {
 }
 
 type Repository interface {
-	Load(string, GUID) (Aggregate, error)
+	Load(reflect.Type, GUID) (Aggregate, error)
 	Save(Aggregate) error
 }

@@ -2,41 +2,41 @@ package ddd
 
 import (
 	"errors"
+	"reflect"
 )
 
 var (
-	ErrHandlerExist    = errors.New("handler is already exist")
 	ErrHandlerNotFound = errors.New("handler not found")
 )
 
 type CmdHandler interface {
+	CanHandleCmd(cmd Cmd) bool
 	HandleCmd(Cmd) error
 }
 
 type CmdBus interface {
 	HandleCmd(Cmd) error
-	SetHandler(CmdHandler, Cmd) error
+	SetHandler(CmdHandler)
 }
 
 type cmdBus struct {
-	handlers map[string]CmdHandler
+	handlers map[reflect.Type]CmdHandler
 }
 
 func NewCmdBus() CmdBus {
-	return &cmdBus{make(map[string]CmdHandler)}
+	return &cmdBus{make(map[reflect.Type]CmdHandler)}
 }
 
 func (p *cmdBus) HandleCmd(cmd Cmd) error {
-	if handler, ok := p.handlers[cmd.CmdType()]; ok {
-		return handler.HandleCmd(cmd)
+	err := ErrHandlerNotFound
+	for _, handler := range p.handlers {
+		if handler.CanHandleCmd(cmd) {
+			err = handler.HandleCmd(cmd)
+		}
 	}
-	return ErrHandlerNotFound
+	return err
 }
 
-func (p *cmdBus) SetHandler(handler CmdHandler, cmd Cmd) error {
-	if _, ok := p.handlers[cmd.CmdType()]; ok {
-		return ErrHandlerExist
-	}
-	p.handlers[cmd.CmdType()] = handler
-	return nil
+func (p *cmdBus) SetHandler(handler CmdHandler) {
+	p.handlers[reflect.TypeOf(handler)] = handler
 }

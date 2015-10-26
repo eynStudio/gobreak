@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	//	"reflect"
 
 	. "github.com/eynstudio/gobreak"
 	. "github.com/eynstudio/gobreak/db/mgo"
@@ -38,14 +39,10 @@ func main() {
 	repository.RegisterAggregate(&InvitationAggregate{}, NewInvitationAggregate)
 
 	handler, err := NewAggregateCommandHandler(repository)
-	if err != nil {
-		log.Fatalf("could not create command handler: %s", err)
-	}
+	handler.SetAggregateCmds(&InvitationAggregate{}, &CreateInvite{}, &AcceptInvite{}, &DeclineInvite{})
 
 	commandBus := NewCmdBus()
-	commandBus.SetHandler(handler, &CreateInvite{})
-	commandBus.SetHandler(handler, &AcceptInvite{})
-	commandBus.SetHandler(handler, &DeclineInvite{})
+	commandBus.SetHandler(handler)
 
 	invitationRepository := NewMgoRepo("test_Invitations", func() T { return &Invitation{} })
 	di.Root.Apply(invitationRepository)

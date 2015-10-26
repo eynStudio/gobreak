@@ -3,6 +3,7 @@ package ddd
 import (
 	"errors"
 	. "github.com/eynstudio/gobreak"
+	"reflect"
 )
 
 var (
@@ -12,26 +13,27 @@ var (
 
 type DomainRepo struct {
 	EventStore EventStore `di`
-	callbacks  map[string]func(GUID) Aggregate
+	callbacks  map[reflect.Type]func(GUID) Aggregate
 }
 
 func NewDomainRepo() *DomainRepo {
 	return &DomainRepo{
-		callbacks: make(map[string]func(GUID) Aggregate),
+		callbacks: make(map[reflect.Type]func(GUID) Aggregate),
 	}
 }
 
 func (p *DomainRepo) RegisterAggregate(aggregate Aggregate, callback func(GUID) Aggregate) error {
-	if _, ok := p.callbacks[aggregate.AggType()]; ok {
+	aggType := reflect.TypeOf(aggregate)
+	if _, ok := p.callbacks[aggType]; ok {
 		return ErrAggregateAlreadyRegistered
 	}
 
-	p.callbacks[aggregate.AggType()] = callback
+	p.callbacks[aggType] = callback
 
 	return nil
 }
 
-func (p *DomainRepo) Load(aggregateType string, id GUID) (Aggregate, error) {
+func (p *DomainRepo) Load(aggregateType reflect.Type, id GUID) (Aggregate, error) {
 	if f, ok := p.callbacks[aggregateType]; ok {
 		return p.EventStore.Load(f(id))
 	} else {

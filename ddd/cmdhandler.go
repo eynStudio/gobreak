@@ -16,13 +16,13 @@ type CommandFieldError struct {
 	Field string
 }
 
-func (c CommandFieldError) Error() string {
-	return "missing field: " + c.Field
+func (p CommandFieldError) Error() string {
+	return "missing field: " + p.Field
 }
 
 type AggregateCommandHandler struct {
 	repository Repository
-	aggregates map[string]string
+	cmdAggMap  map[reflect.Type]reflect.Type
 }
 
 func NewAggregateCommandHandler(repository Repository) (*AggregateCommandHandler, error) {
@@ -32,19 +32,47 @@ func NewAggregateCommandHandler(repository Repository) (*AggregateCommandHandler
 
 	h := &AggregateCommandHandler{
 		repository: repository,
-		aggregates: make(map[string]string),
+		cmdAggMap:  make(map[reflect.Type]reflect.Type),
 	}
 	return h, nil
 }
 
-func (h *AggregateCommandHandler) HandleCmd(cmd Cmd) error {
-	err := h.checkCmd(cmd)
+func (p *AggregateCommandHandler) SetAggregateCmd(aggregate Aggregate, cmd Cmd) error {
+	if _, ok := p.cmdAggMap[reflect.TypeOf(cmd)]; ok {
+		return ErrAggregateAlreadySet
+	}
+
+	p.cmdAggMap[reflect.TypeOf(cmd)] = reflect.TypeOf(aggregate)
+	return nil
+}
+
+func (p *AggregateCommandHandler) SetAggregateCmds(aggregate Aggregate, cmds ...Cmd) error {
+	var err error
+	for _, c := range cmds {
+		err = p.SetAggregateCmd(aggregate, c)
+	}
+	return err
+}
+
+func (p *AggregateCommandHandler) CanHandleCmd(cmd Cmd) bool {
+	_, ok := p.cmdAggMap[reflect.TypeOf(cmd)]
+	return ok
+}
+
+func (p *AggregateCommandHandler) HandleCmd(cmd Cmd) error {
+	err := p.checkCmd(cmd)
 	if err != nil {
 		return err
 	}
 
+	var aggregateType reflect.Type
+	var ok bool
+	if aggregateType, ok = p.cmdAggMap[reflect.TypeOf(cmd)]; !ok {
+		return ErrAggregateNotFound
+	}
+
 	var aggregate Aggregate
-	if aggregate, err = h.repository.Load(cmd.AggType(), cmd.ID()); err != nil {
+	if aggregate, err = p.repository.Load(aggregateType, cmd.ID()); err != nil {
 		return err
 	}
 
@@ -52,14 +80,14 @@ func (h *AggregateCommandHandler) HandleCmd(cmd Cmd) error {
 		return err
 	}
 
-	if err = h.repository.Save(aggregate); err != nil {
+	if err = p.repository.Save(aggregate); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (h *AggregateCommandHandler) checkCmd(cmd Cmd) error {
+func (p *AggregateCommandHandler) checkCmd(cmd Cmd) error {
 	rv := reflect.Indirect(reflect.ValueOf(cmd))
 	rt := rv.Type()
 
