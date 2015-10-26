@@ -2,7 +2,6 @@ package ddd
 
 import (
 	"errors"
-	"reflect"
 )
 
 var (
@@ -20,16 +19,16 @@ type CmdBus interface {
 }
 
 type cmdBus struct {
-	handlers map[reflect.Type]CmdHandler
+	handlers map[CmdHandler]bool
 }
 
 func NewCmdBus() CmdBus {
-	return &cmdBus{make(map[reflect.Type]CmdHandler)}
+	return &cmdBus{make(map[CmdHandler]bool)}
 }
 
 func (p *cmdBus) HandleCmd(cmd Cmd) error {
 	err := ErrHandlerNotFound
-	for _, handler := range p.handlers {
+	for handler := range p.handlers {
 		if handler.CanHandleCmd(cmd) {
 			err = handler.HandleCmd(cmd)
 		}
@@ -38,5 +37,5 @@ func (p *cmdBus) HandleCmd(cmd Cmd) error {
 }
 
 func (p *cmdBus) SetHandler(handler CmdHandler) {
-	p.handlers[reflect.TypeOf(handler)] = handler
+	p.handlers[handler] = true
 }
