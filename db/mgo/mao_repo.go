@@ -11,6 +11,7 @@ import (
 
 type MgoRepo interface {
 	Repo
+	GetAs(id T, m T)
 	CopySession() *mgo.Session
 	C(session *mgo.Session) *mgo.Collection
 
@@ -78,6 +79,13 @@ func (p *mgoRepo) Get(id T) T {
 	m := p.factory()
 	p.C(sess).FindId(id).One(m)
 	return m
+}
+
+func (p *mgoRepo) GetAs(id T, m T) {
+	sess := p.Ctx.CopySession()
+	defer sess.Close()
+
+	p.C(sess).FindId(id).One(m)
 }
 
 func (p *mgoRepo) Save(id T, m T) {
