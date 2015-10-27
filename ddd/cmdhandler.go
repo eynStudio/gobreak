@@ -7,7 +7,6 @@ import (
 )
 
 var (
-	ErrNilRepository       = errors.New("repository is nil")
 	ErrAggregateAlreadySet = errors.New("aggregate is already set")
 	ErrAggregateNotFound   = errors.New("no aggregate for command")
 )
@@ -20,28 +19,27 @@ func (p CmdFieldError) Error() string {
 	return "missing field: " + p.Field
 }
 
-type AggregateCmdHandler struct {
-	repository Repository
+type AggCmdHandler interface {
+	CmdHandler
+	SetAggregate(agg Aggregate) error
+}
+
+type aggCmdHandler struct {
+	DomainRepo `di`
 	cmdAggMap  map[reflect.Type]reflect.Type
 }
 
-func NewAggregateCmdHandler(repository Repository) (*AggregateCmdHandler, error) {
-	if repository == nil {
-		return nil, ErrNilRepository
+func NewAggCmdHandler() AggCmdHandler {
+	return &aggCmdHandler{
+		cmdAggMap: make(map[reflect.Type]reflect.Type),
 	}
-
-	h := &AggregateCmdHandler{
-		repository: repository,
-		cmdAggMap:  make(map[reflect.Type]reflect.Type),
-	}
-	return h, nil
 }
 
-func (p *AggregateCmdHandler) SetAggregate(agg Aggregate) error {
+func (p *aggCmdHandler) SetAggregate(agg Aggregate) error {
 	aggType := reflect.TypeOf(agg)
 	for _, c := range agg.RegistedCmds() {
-		cmdType:=reflect.TypeOf(c)
-		if _, ok := p.cmdAggMap[cmdType];ok {
+		cmdType := reflect.TypeOf(c)
+		if _, ok := p.cmdAggMap[cmdType]; ok {
 			return ErrAggregateAlreadySet
 		}
 		p.cmdAggMap[cmdType] = aggType
@@ -49,12 +47,12 @@ func (p *AggregateCmdHandler) SetAggregate(agg Aggregate) error {
 	return nil
 }
 
-func (p *AggregateCmdHandler) CanHandleCmd(cmd Cmd) bool {
+func (p *aggCmdHandler) CanHandleCmd(cmd Cmd) bool {
 	_, ok := p.cmdAggMap[reflect.TypeOf(cmd)]
 	return ok
 }
 
-func (p *AggregateCmdHandler) HandleCmd(cmd Cmd) error {
+func (p *aggCmdHandler) HandleCmd(cmd Cmd) error {
 	err := p.checkCmd(cmd)
 	if err != nil {
 		return err
@@ -67,7 +65,7 @@ func (p *AggregateCmdHandler) HandleCmd(cmd Cmd) error {
 	}
 
 	var aggregate Aggregate
-	if aggregate, err = p.repository.Load(aggregateType, cmd.ID()); err != nil {
+	if aggregate, err = p.DomainRepo.Load(aggregateType, cmd.ID()); err != nil {
 		return err
 	}
 
@@ -75,14 +73,14 @@ func (p *AggregateCmdHandler) HandleCmd(cmd Cmd) error {
 		return err
 	}
 
-	if err = p.repository.Save(aggregate); err != nil {
+	if err = p.DomainRepo.Save(aggregate); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (p *AggregateCmdHandler) checkCmd(cmd Cmd) error {
+func (p *aggCmdHandler) checkCmd(cmd Cmd) error {
 	rv := reflect.Indirect(reflect.ValueOf(cmd))
 	rt := rv.Type()
 

@@ -9,7 +9,7 @@ type EventHandler interface {
 }
 
 type RegistedEventsHandler interface {
-	HandleEvent(Event)
+	EventHandler
 	RegistedEvents() []Event
 }
 

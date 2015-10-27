@@ -10,9 +10,23 @@ import (
 	. "github.com/eynstudio/gobreak/ddd"
 	. "github.com/eynstudio/gobreak/ddd/mgo"
 	"github.com/eynstudio/gobreak/di"
-	"gopkg.in/mgo.v2/bson"
+	//	"gopkg.in/mgo.v2/bson"
 )
 
+type TestModel struct {
+	Id   GUID
+	Name string
+}
+
+func (p *TestModel) ID() GUID { return p.Id }
+
+type TestCmdModel TestModel
+
+func (p *TestCmdModel) ID() GUID { return p.Id }
+
+type TestEventModel TestModel
+
+func (p *TestEventModel) ID() GUID { return p.Id }
 func main() {
 	mgoCtx := NewMgoCtx(&MgoCfg{
 		Server: "202.192.149.85:27017",
@@ -21,28 +35,16 @@ func main() {
 		Pwd:    "mis.gs@stu.cn"})
 	di.Root.Map(mgoCtx)
 
-	eventBus := NewEventBus()
+	Init()
+	di.Root.Invoke(run)
+
+}
+
+func run(eventBus EventBus, commandBus CmdBus, domainRepo DomainRepo, aggCmdHandler AggCmdHandler) {
 	eventBus.AddGlobalHandler(&LoggerSubscriber{})
 
-	// ---- use memory eventstore ----
-	//	eventStore := NewMemoryEventStore(eventBus)
-	// ---- use mgo eventstore ----
-	eventStore, _ := NewMongoEventStore(eventBus)
-	eventStore.Clear()
-	// ---- end ----
-
-	di.Root.MapAs(eventStore, (*EventStore)(nil))
-
-	repository := NewDomainRepo()
-	di.Root.Apply(repository)
-
-	repository.RegisterAggregate(&InvitationAggregate{}, NewInvitationAggregate)
-
-	handler, err := NewAggregateCmdHandler(repository)
-	handler.SetAggregate(&InvitationAggregate{})
-
-	commandBus := NewCmdBus()
-	commandBus.SetHandler(handler)
+	domainRepo.RegisterAggregate(&InvitationAggregate{}, NewInvitationAggregate)
+	aggCmdHandler.SetAggregate(&InvitationAggregate{})
 
 	invitationRepository := NewMgoRepo("test_Invitations", func() T { return &Invitation{} })
 	di.Root.Apply(invitationRepository)
@@ -59,7 +61,6 @@ func main() {
 	guestListProjector := NewGuestListProjector(guestListRepository, eventID)
 	eventBus.AddHandler(guestListProjector)
 
-
 	// Issue some invitations and responses.
 	// Note that Athena tries to decline the event, but that is not allowed
 	// by the domain logic in InvitationAggregate. The result is that she is
@@ -67,7 +68,7 @@ func main() {
 	athenaID := NewGuid()
 	commandBus.HandleCmd(&CreateInvite{InvitationID: athenaID, Name: "Athena", Age: 42})
 	commandBus.HandleCmd(&AcceptInvite{InvitationID: athenaID})
-	err = commandBus.HandleCmd(&DeclineInvite{InvitationID: athenaID})
+	err := commandBus.HandleCmd(&DeclineInvite{InvitationID: athenaID})
 	if err != nil {
 		fmt.Printf("error: %s\n", err)
 	}
@@ -79,6 +80,9 @@ func main() {
 	zeusID := NewGuid()
 	commandBus.HandleCmd(&CreateInvite{InvitationID: zeusID, Name: "Zeus", Age: 42})
 	commandBus.HandleCmd(&DeclineInvite{InvitationID: zeusID})
+
+	testmodel := &TestModel{Id: zeusID, Name: "eyn"}
+	commandBus.HandleCmd((*TestCmdModel)(testmodel))
 
 	// Read all invites.
 	invitations := invitationRepository.All()
@@ -95,9 +99,4 @@ type LoggerSubscriber struct{}
 
 func (l *LoggerSubscriber) HandleEvent(event Event) {
 	log.Printf("event: %#v\n", event)
-}
-
-func NewGuid() GUID {
-	id := bson.NewObjectId().Hex()
-	return GUID(id)
 }

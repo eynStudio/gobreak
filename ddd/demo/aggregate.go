@@ -26,12 +26,17 @@ func NewInvitationAggregate(id GUID) Aggregate {
 }
 
 func (i *InvitationAggregate) RegistedCmds() []Cmd {
-	return []Cmd{&CreateInvite{}, &AcceptInvite{}, &DeclineInvite{}}
+	return []Cmd{&CreateInvite{}, &AcceptInvite{}, &DeclineInvite{}, &TestCmdModel{}}
 }
 
 func (i *InvitationAggregate) HandleCmd(command Cmd) error {
 
 	switch command := command.(type) {
+	case *TestCmdModel:
+		fmt.Println("TestCmdModel")
+		fmt.Println(command)
+		i.ApplyEvent((*TestEventModel)(command))
+		return nil
 	case *CreateInvite:
 		i.ApplyEvent(&InviteCreated{command.InvitationID, command.Name, command.Age})
 		return nil
@@ -73,6 +78,9 @@ func (i *InvitationAggregate) HandleCmd(command Cmd) error {
 
 func (i *InvitationAggregate) ApplyEvent(event Event) {
 	switch evt := event.(type) {
+	case *TestEventModel:
+		fmt.Println("TestEventModel")
+		fmt.Println(evt)
 	case *InviteCreated:
 		i.StateModel.Name = evt.Name
 		i.StateModel.Age = evt.Age

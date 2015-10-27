@@ -17,13 +17,13 @@ var (
 )
 
 type MongoEventStore struct {
-	eventBus     EventBus
+	EventBus     `di`
 	eventRepo    MgoRepo
 	snapshotRepo MgoRepo
 	factories    map[string]func() Event
 }
 
-func NewMongoEventStore(eventBus EventBus) (*MongoEventStore, error) {
+func NewMongoEventStore() (*MongoEventStore, error) {
 
 	eventRepo := NewMgoRepo("SysAggEvent", nil)
 	di.Root.Apply(eventRepo)
@@ -31,7 +31,6 @@ func NewMongoEventStore(eventBus EventBus) (*MongoEventStore, error) {
 	di.Root.Apply(snapshotRepo)
 
 	s := &MongoEventStore{
-		eventBus:     eventBus,
 		factories:    make(map[string]func() Event),
 		eventRepo:    eventRepo,
 		snapshotRepo: snapshotRepo,
@@ -74,8 +73,8 @@ func (s *MongoEventStore) Save(agg Aggregate) error {
 
 		c.Insert(r)
 
-		if s.eventBus != nil {
-			s.eventBus.PublishEvent(event)
+		if s.EventBus != nil {
+			s.EventBus.PublishEvent(event)
 		}
 	}
 
