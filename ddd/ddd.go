@@ -11,3 +11,11 @@ type Cmd interface {
 type Event interface {
 	ID() GUID
 }
+
+type IdCmd struct {
+	Id GUID
+}
+
+type IdEvent struct {
+	Id GUID
+}
