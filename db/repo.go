@@ -16,10 +16,6 @@ type Repo interface {
 	Del(id T)
 }
 
-//type BaseRepo interface {
-//	Repo
-//}
-
 type MemoryRepo struct {
 	data map[GUID]T
 }

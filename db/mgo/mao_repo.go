@@ -11,6 +11,7 @@ import (
 
 type MgoRepo interface {
 	Repo
+	NewId() GUID
 	GetAs(id T, m T)
 	CopySession() *mgo.Session
 	C(session *mgo.Session) *mgo.Collection
@@ -72,6 +73,9 @@ func (p *mgoRepo) fetchItems(iter *mgo.Iter) []T {
 
 	return result
 }
+
+func (p *mgoRepo) NewId() GUID { return NewGuid() }
+
 func (p *mgoRepo) Get(id T) T {
 	sess := p.Ctx.CopySession()
 	defer sess.Close()
