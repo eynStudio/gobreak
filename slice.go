@@ -22,6 +22,35 @@ func (s *slice) Find(t T) int {
 	return -1
 }
 
+func (s *slice) FindEntity(id GUID) Entity {
+	for i := 0; i < s.val.Len(); i++ {
+		entity := s.val.Index(i).Interface().(Entity)
+		if entity.ID() == id {
+			return entity
+		}
+	}
+	return nil
+}
+func (s *slice) FindEntityIndex(id GUID) int {
+	for i := 0; i < s.val.Len(); i++ {
+		if s.val.Index(i).Interface().(Entity).ID() == id {
+			return i
+		}
+	}
+	return -1
+}
+func (s *slice) ReplaceEntity(entity Entity) *slice {
+	val_entity := reflect.ValueOf(entity)
+	for i := 0; i < s.val.Len(); i++ {
+		if s.val.Index(i).Interface().(Entity).ID() == entity.ID() {
+			s.val.Index(i).Set(val_entity)
+			return s
+		}
+	}
+	s.val.Set(reflect.Append(s.val.Slice(0, s.val.Len()), val_entity))
+	return s
+}
+
 func (s *slice) FindBy(f func(T) bool) int {
 	for i := 0; i < s.val.Len(); i++ {
 		if f(s.val.Index(i).Interface()) {
@@ -46,4 +75,5 @@ func (s *slice) RemoveAt(i int) *slice {
 }
 
 func (s *slice) Remove(t T) *slice              { return s.RemoveAt(s.Find(t)) }
+func (s *slice) RemoveEntity(id GUID) *slice    { return s.RemoveAt(s.FindEntityIndex(id)) }
 func (s *slice) RemoveBy(f func(T) bool) *slice { return s.RemoveAt(s.FindBy(f)) }

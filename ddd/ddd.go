@@ -16,6 +16,10 @@ type IdCmd struct {
 	Id GUID
 }
 
+func (p *IdCmd) ID() GUID { return p.Id }
+
 type IdEvent struct {
 	Id GUID
 }
+
+func (p *IdEvent) ID() GUID { return p.Id }
