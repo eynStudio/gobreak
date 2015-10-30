@@ -3,6 +3,7 @@ package gobreak
 type T interface{}
 
 type GUID string
+func (p GUID) ID() GUID {return p}
 
 type Entity interface{
 	ID() GUID
