@@ -8,14 +8,18 @@ import (
 )
 
 type LogInfo struct {
-	Id    GUID      `Id`
-	Time  time.Time `Time`
-	Level string    `Level`
-	Msg   string    `Msg`
+	Id     GUID      `Id`
+	Time   time.Time `Time`
+	Level  string    `Level`
+	Msg    string    `Msg`
 }
 
 type MgoLogger struct {
 	repo MgoRepo
+}
+
+func NewMgoLogger(repo MgoRepo) *MgoLogger {
+	return &MgoLogger{repo}
 }
 
 func (p *MgoLogger) Log(level log.LogLevel, msg string) {
