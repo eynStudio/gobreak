@@ -5,7 +5,7 @@ import (
 )
 
 func Test_Log(t *testing.T) {
-	l := &log{}
-	l.Trace("[TRACE] trace")
-	l.Tracef("[TRACE] %s", "tracef")
+	UseDefaultLogger()
+	Trace("trace")
+	Tracef("%s:%s","xxxx", "tracef")
 }
