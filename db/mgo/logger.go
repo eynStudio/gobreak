@@ -4,12 +4,13 @@ import (
 	"time"
 
 	. "github.com/eynstudio/gobreak"
+	"github.com/eynstudio/gobreak/log"
 )
 
 type LogInfo struct {
 	Id    GUID      `Id`
 	Time  time.Time `Time`
-	Level int       `Level`
+	Level string    `Level`
 	Msg   string    `Msg`
 }
 
@@ -17,11 +18,11 @@ type MgoLogger struct {
 	repo MgoRepo
 }
 
-func (p *MgoLogger) Log(level int, msg string) {
+func (p *MgoLogger) Log(level log.LogLevel, msg string) {
 	info := &LogInfo{
 		Id:    p.repo.NewId(),
 		Time:  time.Now(),
-		Level: level,
+		Level: log.LogLevelName[level],
 		Msg:   msg,
 	}
 	p.repo.Save(info.Id, info)

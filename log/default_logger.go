@@ -6,8 +6,8 @@ import(
 
 type DefaultLogger struct{}
 
-func (p *DefaultLogger) Log(level int,msg string){
-	log.Printf("[%d] %s\n",level, msg)
+func (p *DefaultLogger) Log(level LogLevel,msg string){
+	log.Printf("[%s] %s\n",LogLevelName[level], msg)
 }
 
 func UseDefaultLogger(){
