@@ -27,34 +27,36 @@ func Open(driver, source string) (*Orm, error) {
 	}
 
 	var users []User = []User{}
-	test(orm, users)
+	test(orm, &users)
 	return orm, err
 }
 
 func (p *Orm) DB() *sql.DB { return p.db }
 
 func test(o *Orm, lst interface{}) {
-
 	m := o.models.GetModelInfo(lst)
+	fmt.Println(m)
 
-	t := v.Type()
-	fmt.Println(t)
+	resultv := reflect.ValueOf(lst)
+	if resultv.Kind() != reflect.Ptr || resultv.Elem().Kind() != reflect.Slice {
+		panic("lst argument must be a slice address")
+	}
+	slicev := resultv.Elem()
 
 	rows, _ := o.db.Query("select * from [user]")
 	cols, _ := rows.Columns()
 
+	tmp_values := m.GetValuesForSqlRowScan(cols)
+
 	for rows.Next() {
-		var values = make([]interface{}, len(cols))
-		for i, _ := range cols {
-			var a interface{}
-			values[i] = &a
-		}
+		var values = tmp_values[:]
 		rows.Scan(values...)
-		fmt.Println(values)
-		//		for _, c := range values {
-		//			fmt.Println(c)
-		//		}
+		elem:=m.MapObjFromRowValues(cols,values)
+		slicev = reflect.Append(slicev, elem)
+
 	}
+	resultv.Elem().Set(slicev.Slice(0, slicev.Cap()))
+	fmt.Println(lst)
 }
 
 type User struct {
