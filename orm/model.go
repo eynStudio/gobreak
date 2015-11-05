@@ -1,7 +1,10 @@
 package orm
 
 import (
+	"database/sql"
 	"reflect"
+
+	. "github.com/eynstudio/gobreak"
 )
 
 type field struct {
@@ -65,7 +68,7 @@ func (p *model) GetValuesForSqlRowScan(cols []string) []interface{} {
 	return values
 }
 
-func (p *model) MapObjFromRowValues(cols []string,values []interface{}) reflect.Value {
+func (p *model) MapObjFromRowValues(cols []string, values []interface{}) reflect.Value {
 	obj := reflect.New(p.Type).Elem()
 	for index, column := range cols {
 		value := values[index]
@@ -78,4 +81,34 @@ func (p *model) MapObjFromRowValues(cols []string,values []interface{}) reflect.
 		}
 	}
 	return obj
+}
+
+func (p *model) MapRowsAsLst(rows *sql.Rows, out T) {
+	resultv := reflect.ValueOf(out)
+	if resultv.Kind() != reflect.Ptr || resultv.Elem().Kind() != reflect.Slice {
+		panic("out argument must be a slice address")
+	}
+	
+	slicev := resultv.Elem()
+	cols, _ := rows.Columns()
+	tmp_values := p.GetValuesForSqlRowScan(cols)
+
+	for rows.Next() {
+		var values = tmp_values[:]
+		rows.Scan(values...)
+		elem := p.MapObjFromRowValues(cols, values)
+		slicev = reflect.Append(slicev, elem)
+	}
+	resultv.Elem().Set(slicev.Slice(0, slicev.Cap()))
+}
+
+func (p *model) MapRowsAsObj(rows *sql.Rows, out T) {
+	resultv := reflect.ValueOf(out)
+	cols, _ := rows.Columns()
+	if rows.Next() {
+		var values = p.GetValuesForSqlRowScan(cols)
+		rows.Scan(values...)
+		elem := p.MapObjFromRowValues(cols, values)
+		resultv.Elem().Set(elem)
+	}
 }

@@ -3,7 +3,8 @@ package orm
 import (
 	"database/sql"
 	"fmt"
-	"reflect"
+
+	. "github.com/eynstudio/gobreak"
 )
 
 type Orm struct {
@@ -26,37 +27,39 @@ func Open(driver, source string) (*Orm, error) {
 		err = orm.db.Ping()
 	}
 
-	var users []User = []User{}
-	test(orm, &users)
+	orm.test()
 	return orm, err
 }
 
 func (p *Orm) DB() *sql.DB { return p.db }
 
-func test(o *Orm, lst interface{}) {
-	m := o.models.GetModelInfo(lst)
-	fmt.Println(m)
+func (p *Orm) test() {
+	
+	var users []User = []User{}
+	p.Find(&users)
+	fmt.Println(users)
+	
+	var user User
+	p.First(&user)
+	fmt.Println(user)
+	
+}
+func (p *Orm) Find(out T, where ...T) *Orm {
+	m := p.models.GetModelInfo(out)
 
-	resultv := reflect.ValueOf(lst)
-	if resultv.Kind() != reflect.Ptr || resultv.Elem().Kind() != reflect.Slice {
-		panic("lst argument must be a slice address")
-	}
-	slicev := resultv.Elem()
+	rows, _ := p.db.Query("select * from [user]")
 
-	rows, _ := o.db.Query("select * from [user]")
-	cols, _ := rows.Columns()
+	m.MapRowsAsLst(rows, out)
+	return p
+}
 
-	tmp_values := m.GetValuesForSqlRowScan(cols)
+func (p *Orm) First(out T, where ...T) *Orm {
+	m := p.models.GetModelInfo(out)
 
-	for rows.Next() {
-		var values = tmp_values[:]
-		rows.Scan(values...)
-		elem:=m.MapObjFromRowValues(cols,values)
-		slicev = reflect.Append(slicev, elem)
+	rows, _ := p.db.Query("select top 1 * from [user]")
 
-	}
-	resultv.Elem().Set(slicev.Slice(0, slicev.Cap()))
-	fmt.Println(lst)
+	m.MapRowsAsObj(rows, out)
+	return p
 }
 
 type User struct {
