@@ -47,6 +47,15 @@ func (p *Orm) test() {
 
 
 }
+// Has ,if where has data,check with where, else check the data.Id
+func (p *Orm) Has(data T,where ...T) bool{
+	if len(where)>0 {
+		
+	}else{
+		
+	}
+	return false
+}
 func (p *Orm) Find(data T, where ...T) *Orm {
 	m := p.models.GetModelInfo(data)
 	builder := newSqlBuilder(&m, p.dialect)
