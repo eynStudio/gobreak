@@ -34,31 +34,44 @@ func Open(driver, source string) (*Orm, error) {
 func (p *Orm) DB() *sql.DB { return p.db }
 
 func (p *Orm) test() {
-	
+//	u := &User{"aaaa4", "sss", 99}
+//	p.Insert(u)
+
 	var users []User = []User{}
 	p.Find(&users)
+	fmt.Println(len(users))
 	fmt.Println(users)
-	
+
 	var user User
 	p.First(&user)
 	fmt.Println(user)
-	
+
+
 }
-func (p *Orm) Find(out T, where ...T) *Orm {
-	m := p.models.GetModelInfo(out)
-
-	rows, _ := p.db.Query("select * from [user]")
-
-	m.MapRowsAsLst(rows, out)
+func (p *Orm) Find(data T, where ...T) *Orm {
+	m := p.models.GetModelInfo(data)
+	builder := newSqlBuilder(&m, p.dialect)
+	rows, _ := p.db.Query(builder.buildSelect())
+	m.MapRowsAsLst(rows, data)
 	return p
 }
 
-func (p *Orm) First(out T, where ...T) *Orm {
-	m := p.models.GetModelInfo(out)
+func (p *Orm) First(data T, where ...T) *Orm {
+	m := p.models.GetModelInfo(data)
+	builder := newSqlBuilder(&m, p.dialect)
+	rows, _ := p.db.Query(builder.buildSelect1())
+	m.MapRowsAsObj(rows, data)
+	return p
+}
 
-	rows, _ := p.db.Query("select top 1 * from [user]")
+func (p *Orm) Insert(data T) *Orm {
+	m := p.models.GetModelInfo(data)
+	builder := newSqlBuilder(&m, p.dialect)
+	sql, args := builder.buildInsert(data)
+	if _, err := p.db.Exec(sql, args...); err != nil {
+		fmt.Println(err)
+	}
 
-	m.MapRowsAsObj(rows, out)
 	return p
 }
 

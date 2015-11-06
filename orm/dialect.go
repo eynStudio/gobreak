@@ -4,7 +4,7 @@ import(
 	"fmt"
 )
 type Dialect interface {
-
+	Quote(key string) string
 }
 
 func NewDialect(driver string) Dialect {
@@ -22,3 +22,7 @@ func NewDialect(driver string) Dialect {
 }
 
 type commonDialect struct{}
+
+func (commonDialect) Quote(key string) string {
+	return fmt.Sprintf(`"%s"`, key)
+}

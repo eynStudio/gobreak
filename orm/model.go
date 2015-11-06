@@ -14,8 +14,17 @@ type field struct {
 }
 
 type model struct {
+	Name   string
 	Type   reflect.Type
 	Fields map[string]field
+}
+
+func newModel(modelType reflect.Type) model {
+	return model{
+		Name:   modelType.Name(),
+		Fields: make(map[string]field, 0),
+		Type:   modelType,
+	}
 }
 
 type modelStruct struct {
@@ -42,7 +51,7 @@ func (p *modelStruct) GetModelInfo(val interface{}) model {
 		return mt
 	}
 
-	mt := model{Fields: make(map[string]field, 0), Type: modeltype}
+	mt := newModel(modeltype)
 	for i := 0; i < value.NumField(); i++ {
 		mt.Fields[modeltype.Field(i).Name] = field{modeltype.Field(i).Name, modeltype.Field(i).Type, value.Field(i)}
 	}
@@ -88,7 +97,7 @@ func (p *model) MapRowsAsLst(rows *sql.Rows, out T) {
 	if resultv.Kind() != reflect.Ptr || resultv.Elem().Kind() != reflect.Slice {
 		panic("out argument must be a slice address")
 	}
-	
+
 	slicev := resultv.Elem()
 	cols, _ := rows.Columns()
 	tmp_values := p.GetValuesForSqlRowScan(cols)
@@ -99,7 +108,7 @@ func (p *model) MapRowsAsLst(rows *sql.Rows, out T) {
 		elem := p.MapObjFromRowValues(cols, values)
 		slicev = reflect.Append(slicev, elem)
 	}
-	resultv.Elem().Set(slicev.Slice(0, slicev.Cap()))
+	resultv.Elem().Set(slicev.Slice(0, slicev.Len()))
 }
 
 func (p *model) MapRowsAsObj(rows *sql.Rows, out T) {
@@ -111,4 +120,14 @@ func (p *model) MapRowsAsObj(rows *sql.Rows, out T) {
 		elem := p.MapObjFromRowValues(cols, values)
 		resultv.Elem().Set(elem)
 	}
+}
+
+func (p *model) Obj2Map(data T) map[string]interface{} {
+	val := reflect.ValueOf(data)
+	m := make(map[string]interface{}, len(p.Fields))
+	for k := range p.Fields {
+		field := val.Elem().FieldByName(k)
+		m[k] = field.Interface()
+	}
+	return m
 }
