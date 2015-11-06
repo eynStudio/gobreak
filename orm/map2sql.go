@@ -44,3 +44,24 @@ func (p *sqlBuilder) buildInsert(obj T) (string,[]interface{}){
 	)	
 	return sql,args
 }
+
+func (p *sqlBuilder) buildUpdate(obj T) (string,[]interface{}){
+	id:=p.model.Id()
+	idval:=p.model.IdVal(obj)	
+	
+	var cols []string
+	var args []interface{}
+	m:=p.model.Obj2Map(obj)
+	for k,v:=range m{
+		cols=append(cols,p.dialect.Quote(k)+"=?")
+		args=append(args,v)
+	}
+	args=append(args,idval)
+	
+	sql:=fmt.Sprintf("UPDATE %s SET %v where %v=?",
+		p.dialect.Quote(p.model.Name),
+		strings.Join(cols,","),
+		p.dialect.Quote(id),
+	)	
+	return sql,args
+}

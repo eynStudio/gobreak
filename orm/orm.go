@@ -34,12 +34,11 @@ func Open(driver, source string) (*Orm, error) {
 func (p *Orm) DB() *sql.DB { return p.db }
 
 func (p *Orm) test() {
-//	u := &User{"aaaa4", "sss", 99}
-//	p.Insert(u)
+	u := &User{"aaaa4", "sss", 9990}
+	p.Update(u)
 
 	var users []User = []User{}
 	p.Find(&users)
-	fmt.Println(len(users))
 	fmt.Println(users)
 
 	var user User
@@ -75,6 +74,18 @@ func (p *Orm) Insert(data T) *Orm {
 	return p
 }
 
+func (p *Orm) Update(data T) *Orm {
+	m := p.models.GetModelInfo(data)
+	builder := newSqlBuilder(&m, p.dialect)
+	sql, args := builder.buildUpdate(data)
+	
+	fmt.Println(sql,args)
+	if _, err := p.db.Exec(sql, args...); err != nil {
+		fmt.Println(err)
+	}
+
+	return p
+}
 type User struct {
 	Id  string
 	Mc  string

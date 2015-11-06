@@ -59,6 +59,22 @@ func (p *modelStruct) GetModelInfo(val interface{}) model {
 	return mt
 }
 
+func (p*model) Id() string{
+	if _,ok:=p.Fields["Id"];ok{
+		return "Id"
+	}	
+	for k,v:=range p.Fields{
+		if v.Type.Name() =="GUID" {
+			return k
+		}
+	}
+	panic("Can not find Id")
+}
+func (p*model) IdVal(obj T) interface{}{
+	id:=p.Id()
+	val:=reflect.ValueOf(obj).Elem()
+	return val.FieldByName(id).Interface()
+}
 func (p *model) GetValuesForSqlRowScan(cols []string) []interface{} {
 	var values = make([]interface{}, len(cols))
 
