@@ -34,13 +34,16 @@ func Open(driver, source string) (*Orm, error) {
 func (p *Orm) DB() *sql.DB { return p.db }
 
 func (p *Orm) test() {
-	//	u := &User{"aaaa4", "sss", 9990}
+	u := &User{"insert1", "insert222", 9990}
 	//	p.Update(u)
+	p.Update(u)
+	p.Where("age=?", 99).Del(&User{})
+	p.Del(&User{Id: "insert1"})
 
 	fmt.Println(p.Count(&User{}))
 	fmt.Println(p.Where("age=?", 99).Count(&User{}))
 	fmt.Println(p.WhereId("aaaa").Count(&User{}))
-	fmt.Printf("Has:%v\n", p.Has(&User{}, "aaaa"))
+	fmt.Printf("Has:%v\n", p.HasId(&User{}, "aaaa"))
 
 	var user User
 	p.Where("age=?", 99).One(&user)
@@ -58,28 +61,23 @@ func (p *Orm) test() {
 }
 
 func (p *Orm) Where(sql string, args ...interface{}) *Scope {
-	scope := NewScope(p)
-	scope.Where(sql, args...)
-	return scope
+	return NewScope(p).Where(sql, args...)
 }
 func (p *Orm) WhereId(id interface{}) *Scope {
-	scope := NewScope(p)
-	scope.WhereId(id)
-	return scope
+	return 	 NewScope(p).WhereId(id)
 }
-func (p *Orm) Has(data T, id interface{}) bool {
-	scope := NewScope(p)
-	return scope.WhereId(id).Count(data) > 0
+func (p *Orm) Has(data T) bool {
+	return NewScope(p).Has(data)
 }
-
+func (p *Orm) HasId(data T, id interface{}) bool {
+	return NewScope(p).WhereId(id).Count(data) > 0
+}
 func (p *Orm) Count(data T) int {
-	scope := NewScope(p)
-	return scope.Count(data)
+	return NewScope(p).Count(data)
 }
 
 func (p *Orm) All(data T) T {
-	scope := NewScope(p)
-	scope.All(data)
+	NewScope(p).All(data)
 	return data
 }
 
@@ -89,26 +87,20 @@ func (p *Orm) One(data T) T {
 }
 
 func (p *Orm) Insert(data T) *Orm {
-	m := p.models.GetModelInfo(data)
-	builder := newSqlBuilder(&m, p.dialect)
-	sql, args := builder.buildInsert(data)
-	if _, err := p.db.Exec(sql, args...); err != nil {
-		fmt.Println(err)
-	}
-
+	NewScope(p).Insert(data)
 	return p
 }
 
 func (p *Orm) Update(data T) *Orm {
-	m := p.models.GetModelInfo(data)
-	builder := newSqlBuilder(&m, p.dialect)
-	sql, args := builder.buildUpdate(data)
-
-	fmt.Println(sql, args)
-	if _, err := p.db.Exec(sql, args...); err != nil {
-		fmt.Println(err)
-	}
-
+	NewScope(p).Update(data)
+	return p
+}
+func (p *Orm) Save(data T) *Orm {
+	NewScope(p).Save(data)
+	return p
+}
+func (p *Orm) Del(data T) *Orm {
+	NewScope(p).Del(data)
 	return p
 }
 

@@ -17,14 +17,16 @@ type model struct {
 	Name   string
 	Type   reflect.Type
 	Fields map[string]field
+	IdName string
 }
 
 func newModel(modelType reflect.Type) model {
-	return model{
+	m := model{
 		Name:   modelType.Name(),
 		Fields: make(map[string]field, 0),
 		Type:   modelType,
 	}
+	return m
 }
 
 type modelStruct struct {
@@ -59,20 +61,26 @@ func (p *modelStruct) GetModelInfo(val interface{}) model {
 	return mt
 }
 
-func (p*model) Id() string{
-	if _,ok:=p.Fields["Id"];ok{
-		return "Id"
-	}	
-	for k,v:=range p.Fields{
-		if v.Type.Name() =="GUID" {
-			return k
+func (p *model) Id() string {
+	if len(p.IdName) > 0 {
+		return p.IdName
+	}
+
+	if _, ok := p.Fields["Id"]; ok {
+		p.IdName = "Id"
+		return p.IdName
+	}
+	for k, v := range p.Fields {
+		if v.Type.Name() == "GUID" {
+			p.IdName = k
+			return p.IdName
 		}
 	}
 	panic("Can not find Id")
 }
-func (p*model) IdVal(obj T) interface{}{
-	id:=p.Id()
-	val:=reflect.ValueOf(obj).Elem()
+func (p *model) IdVal(obj T) interface{} {
+	id := p.Id()
+	val := reflect.ValueOf(obj).Elem()
 	return val.FieldByName(id).Interface()
 }
 func (p *model) GetValuesForSqlRowScan(cols []string) []interface{} {
