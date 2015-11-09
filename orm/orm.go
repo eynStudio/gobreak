@@ -34,9 +34,9 @@ func Open(driver, source string) (*Orm, error) {
 func (p *Orm) DB() *sql.DB { return p.db }
 
 func (p *Orm) test() {
-	u := &User{"insert1", "insert222", 9990}
+	u := &User{"insert12", "insert222", 9990}
 	//	p.Update(u)
-	p.Update(u)
+	p.Save(u)
 	p.Where("age=?", 99).Del(&User{})
 	p.Del(&User{Id: "insert1"})
 
@@ -64,7 +64,7 @@ func (p *Orm) Where(sql string, args ...interface{}) *Scope {
 	return NewScope(p).Where(sql, args...)
 }
 func (p *Orm) WhereId(id interface{}) *Scope {
-	return 	 NewScope(p).WhereId(id)
+	return NewScope(p).WhereId(id)
 }
 func (p *Orm) Has(data T) bool {
 	return NewScope(p).Has(data)

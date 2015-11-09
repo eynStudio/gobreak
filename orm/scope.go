@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	. "github.com/eynstudio/gobreak"
+		 "github.com/eynstudio/gobreak/db"
 )
 
 type Scope struct {
@@ -15,6 +16,9 @@ type Scope struct {
 	whereid   interface{}
 	wheresql  string
 	whereargs []interface{}
+	offset    int
+	limit     int
+	hasLimit  bool
 }
 
 func NewScope(orm *Orm) *Scope {
@@ -71,6 +75,18 @@ func (p *Scope) All(model T) {
 	p.model.MapRowsAsLst(rows, model)
 }
 
+func (p *Scope) Limit(offset, limit int) *Scope {
+	p.offset = offset
+	p.limit = limit
+	p.hasLimit = true
+	return p
+}
+func (p*Scope) Page(model T) *db.Paging{
+	paging:=&db.Paging{}
+	
+	
+	return paging
+}
 func (p *Scope) Save(model T) *Scope {
 	p.checkModel(model)
 	var sql string
