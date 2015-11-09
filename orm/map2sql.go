@@ -9,12 +9,14 @@ import (
 type sqlBuilder struct{
 	model *model
 	dialect Dialect
+	where *Where
 }
 
 func newSqlBuilder(m *model,dialect Dialect) *sqlBuilder{
 	return &sqlBuilder{
 		model:m,
 		dialect:dialect,
+		where:NewWhere(m,dialect),
 	}
 }
 func (p *sqlBuilder) buildSelect() string{
@@ -25,6 +27,16 @@ func (p *sqlBuilder) buildSelect() string{
 func (p *sqlBuilder) buildSelect1() string{
 	sql:=fmt.Sprintf("select top 1 * from %s",p.dialect.Quote(p.model.Name))	
 	return sql
+}
+
+
+func (p *sqlBuilder) buildCount(obj T,where ...interface{}) (string,[]interface{}){
+	id:=p.model.Id()
+	wsql,args:=p.where.where(obj,where...)
+	
+	sql:= fmt.Sprintf("SELECT COUNT(%v) from %s %v",p.quote(id), p.quote(p.model.Name),wsql)	
+	fmt.Println(sql)
+	return sql,args
 }
 
 func (p *sqlBuilder) buildInsert(obj T) (string,[]interface{}){
@@ -65,3 +77,5 @@ func (p *sqlBuilder) buildUpdate(obj T) (string,[]interface{}){
 	)	
 	return sql,args
 }
+
+func (p *sqlBuilder) quote(val string) string {return p.dialect.Quote(val)}

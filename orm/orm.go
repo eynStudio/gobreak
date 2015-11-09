@@ -34,42 +34,58 @@ func Open(driver, source string) (*Orm, error) {
 func (p *Orm) DB() *sql.DB { return p.db }
 
 func (p *Orm) test() {
-	u := &User{"aaaa4", "sss", 9990}
-	p.Update(u)
+	//	u := &User{"aaaa4", "sss", 9990}
+	//	p.Update(u)
 
-	var users []User = []User{}
-	p.Find(&users)
-	fmt.Println(users)
+	fmt.Println(p.Count(&User{}))
+	fmt.Println(p.Where("age=?", 99).Count(&User{}))
+	fmt.Println(p.WhereId("aaaa").Count(&User{}))
+	fmt.Printf("Has:%v\n", p.Has(&User{}, "aaaa"))
 
 	var user User
-	p.First(&user)
-	fmt.Println(user)
+	p.Where("age=?", 99).One(&user)
+	fmt.Printf("One:%v\n", user)
+	p.One(&user)
+	fmt.Printf("One:%v\n", user)
 
+	var users []User = []User{}
+	p.Where("age=?", 99).All(&users)
+	fmt.Println(users)
+	users = []User{}
+	p.All(&users)
+	fmt.Println(users)
 
 }
-// Has ,if where has data,check with where, else check the data.Id
-func (p *Orm) Has(data T,where ...T) bool{
-	if len(where)>0 {
-		
-	}else{
-		
-	}
-	return false
+
+func (p *Orm) Where(sql string, args ...interface{}) *Scope {
+	scope := NewScope(p)
+	scope.Where(sql, args...)
+	return scope
 }
-func (p *Orm) Find(data T, where ...T) *Orm {
-	m := p.models.GetModelInfo(data)
-	builder := newSqlBuilder(&m, p.dialect)
-	rows, _ := p.db.Query(builder.buildSelect())
-	m.MapRowsAsLst(rows, data)
-	return p
+func (p *Orm) WhereId(id interface{}) *Scope {
+	scope := NewScope(p)
+	scope.WhereId(id)
+	return scope
+}
+func (p *Orm) Has(data T, id interface{}) bool {
+	scope := NewScope(p)
+	return scope.WhereId(id).Count(data) > 0
 }
 
-func (p *Orm) First(data T, where ...T) *Orm {
-	m := p.models.GetModelInfo(data)
-	builder := newSqlBuilder(&m, p.dialect)
-	rows, _ := p.db.Query(builder.buildSelect1())
-	m.MapRowsAsObj(rows, data)
-	return p
+func (p *Orm) Count(data T) int {
+	scope := NewScope(p)
+	return scope.Count(data)
+}
+
+func (p *Orm) All(data T) T {
+	scope := NewScope(p)
+	scope.All(data)
+	return data
+}
+
+func (p *Orm) One(data T) T {
+	NewScope(p).One(data)
+	return data
 }
 
 func (p *Orm) Insert(data T) *Orm {
@@ -87,14 +103,15 @@ func (p *Orm) Update(data T) *Orm {
 	m := p.models.GetModelInfo(data)
 	builder := newSqlBuilder(&m, p.dialect)
 	sql, args := builder.buildUpdate(data)
-	
-	fmt.Println(sql,args)
+
+	fmt.Println(sql, args)
 	if _, err := p.db.Exec(sql, args...); err != nil {
 		fmt.Println(err)
 	}
 
 	return p
 }
+
 type User struct {
 	Id  string
 	Mc  string
