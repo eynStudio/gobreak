@@ -27,7 +27,7 @@ func Open(driver, source string) (*Orm, error) {
 		err = orm.db.Ping()
 	}
 
-	orm.test()
+//	orm.test()
 	return orm, err
 }
 
