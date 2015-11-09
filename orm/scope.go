@@ -96,8 +96,8 @@ func (p *Scope) Save(model T) *Scope {
 	} else {
 		sql, args = p.buildInsert(model)
 	}
-
 	if _, err := p.orm.db.Exec(sql, args...); err != nil {
+		fmt.Println("Save:",sql)
 		fmt.Println(err)
 	}
 
@@ -108,6 +108,7 @@ func (p *Scope) Insert(model T) *Scope {
 	p.checkModel(model)
 	sql, args := p.buildInsert(model)
 	if _, err := p.orm.db.Exec(sql, args...); err != nil {
+		fmt.Println("Save:",sql)
 		fmt.Println(err)
 	}
 	return p
@@ -117,6 +118,7 @@ func (p *Scope) Update(model T) *Scope {
 	p.checkModel(model)
 	sql, args := p.buildUpdate(model)
 	if _, err := p.orm.db.Exec(sql, args...); err != nil {
+		fmt.Println("Save:",sql)
 		fmt.Println(err)
 	}
 	return p
@@ -128,6 +130,7 @@ func (p *Scope) Del(model T) *Scope {
 	wsql, args := p.buildWhere()
 	sql := fmt.Sprintf("DELETE from %s %v", p.quote(p.model.Name), wsql)
 	if _, err := p.orm.db.Exec(sql, args...); err != nil {
+		fmt.Println("Save:",sql)
 		fmt.Println(err)
 	}
 	return p
