@@ -10,7 +10,6 @@ import (
 type Orm struct {
 	db      *sql.DB
 	dialect Dialect
-	models  *modelStruct
 }
 
 func Open(driver, source string) (*Orm, error) {
@@ -18,7 +17,6 @@ func Open(driver, source string) (*Orm, error) {
 
 	orm := &Orm{
 		dialect: NewDialect(driver),
-		models:  NewModelStruce(),
 	}
 
 	orm.db, err = sql.Open(driver, source)
@@ -57,6 +55,10 @@ func (p *Orm) test() {
 	users = []User{}
 	p.All(&users)
 	fmt.Println(users)
+	
+	var user2 User2
+	Extend(&user2,u)
+	fmt.Println(user2)
 
 }
 
@@ -107,5 +109,11 @@ func (p *Orm) Del(data T) *Orm {
 type User struct {
 	Id  string
 	Mc  string
+	Age int
+}
+
+type User2 struct {
+	Id  string
+	Xm  string
 	Age int
 }

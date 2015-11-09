@@ -7,6 +7,8 @@ import (
 	. "github.com/eynstudio/gobreak"
 )
 
+var models = map[reflect.Type]model{}
+
 type field struct {
 	Name  string
 	Type  reflect.Type
@@ -29,17 +31,7 @@ func newModel(modelType reflect.Type) model {
 	return m
 }
 
-type modelStruct struct {
-	Models map[reflect.Type]model
-}
-
-func NewModelStruce() *modelStruct {
-	return &modelStruct{
-		Models: make(map[reflect.Type]model, 0),
-	}
-}
-
-func (p *modelStruct) GetModelInfo(val interface{}) model {
+func getModelInfo(val interface{}) model {
 	value := reflect.Indirect(reflect.ValueOf(val))
 	if value.Kind() == reflect.Slice {
 		value = reflect.Indirect(reflect.New(value.Type().Elem()))
@@ -49,7 +41,7 @@ func (p *modelStruct) GetModelInfo(val interface{}) model {
 	}
 	modeltype := value.Type()
 
-	if mt, ok := p.Models[modeltype]; ok {
+	if mt, ok := models[modeltype]; ok {
 		return mt
 	}
 
@@ -57,7 +49,7 @@ func (p *modelStruct) GetModelInfo(val interface{}) model {
 	for i := 0; i < value.NumField(); i++ {
 		mt.Fields[modeltype.Field(i).Name] = field{modeltype.Field(i).Name, modeltype.Field(i).Type, value.Field(i)}
 	}
-	p.Models[modeltype] = mt
+	models[modeltype] = mt
 	return mt
 }
 

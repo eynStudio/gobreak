@@ -53,7 +53,7 @@ func (p *Scope) Has(model T) bool {
 	id := p.model.Id()
 	idval := p.model.IdVal(model)
 	sql := fmt.Sprintf("SELECT COUNT(%v) from %s WHERE %v=?", p.quote(id), p.quote(p.model.Name), id)
-	row := p.orm.db.QueryRow(sql, []interface{}{idval})
+	row := p.orm.db.QueryRow(sql, idval)
 	count := 0
 	row.Scan(&count)
 	return count > 0
@@ -183,7 +183,7 @@ func (p *Scope) buildUpdate(obj T) (string, []interface{}) {
 func (p *Scope) quote(str string) string { return p.orm.dialect.Quote(str) }
 func (p *Scope) checkModel(model T) {
 	if p.model == nil {
-		m := p.orm.models.GetModelInfo(model)
+		m := getModelInfo(model)
 		p.model = &m
 	}
 }
