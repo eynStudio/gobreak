@@ -48,6 +48,7 @@ func getModelInfo(val interface{}) model {
 	mt := newModel(modeltype)
 	for i := 0; i < value.NumField(); i++ {
 		mt.Fields[modeltype.Field(i).Name] = field{modeltype.Field(i).Name, modeltype.Field(i).Type, value.Field(i)}
+
 	}
 	models[modeltype] = mt
 	return mt
@@ -75,6 +76,7 @@ func (p *model) IdVal(obj T) interface{} {
 	val := reflect.ValueOf(obj).Elem()
 	return val.FieldByName(id).Interface()
 }
+
 func (p *model) GetValuesForSqlRowScan(cols []string) []interface{} {
 	var values = make([]interface{}, len(cols))
 
@@ -140,10 +142,9 @@ func (p *model) MapRowsAsObj(rows *sql.Rows, out T) {
 
 func (p *model) Obj2Map(data T) map[string]interface{} {
 	val := reflect.ValueOf(data)
-	m := make(map[string]interface{}, len(p.Fields))
+	m := make(map[string]interface{}, len(p.Fields))	
 	for k := range p.Fields {
-		field := val.Elem().FieldByName(k)
-		m[k] = field.Interface()
+		m[k] = val.Elem().FieldByName(k).Interface()		
 	}
 	return m
 }

@@ -8,13 +8,10 @@ import (
 
 func Extend(dest, src T) {
 	destModel :=getModelInfo(dest)
-	srcModel := getModelInfo(src)
 	destVal := reflect.Indirect(reflect.ValueOf(dest))
 	srcVal := reflect.Indirect(reflect.ValueOf(src))
-
 	for k := range destModel.Fields {
-		if _, ok := srcModel.Fields[k]; ok {
-			val := srcVal.FieldByName(k)
+		if val := srcVal.FieldByName(k);val.IsValid(){
 			destVal.FieldByName(k).Set(val)
 		}
 	}

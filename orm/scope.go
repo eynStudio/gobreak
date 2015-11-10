@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	. "github.com/eynstudio/gobreak"
-		 "github.com/eynstudio/gobreak/db"
+	"github.com/eynstudio/gobreak/db"
 )
 
 type Scope struct {
@@ -43,7 +43,7 @@ func (p *Scope) Count(model T) int {
 	id := p.model.Id()
 	wsql, args := p.buildWhere()
 	sql := fmt.Sprintf("SELECT COUNT(%v) from %s %v", p.quote(id), p.quote(p.model.Name), wsql)
-	row := p.orm.db.QueryRow(sql, args...)
+	row := p.orm.db.QueryRow(sql, convertArgs(args)...)
 	count := 0
 	row.Scan(&count)
 	return count
@@ -53,16 +53,19 @@ func (p *Scope) Has(model T) bool {
 	id := p.model.Id()
 	idval := p.model.IdVal(model)
 	sql := fmt.Sprintf("SELECT COUNT(%v) from %s WHERE %v=?", p.quote(id), p.quote(p.model.Name), id)
-	row := p.orm.db.QueryRow(sql, idval)
+	row := p.orm.db.QueryRow(sql, convertArgs(idval)...)
 	count := 0
-	row.Scan(&count)
+	if err := row.Scan(&count); err != nil {
+		fmt.Println("Has:", sql)
+		fmt.Println(err)
+	}
 	return count > 0
 }
 func (p *Scope) One(model T) (has bool) {
 	p.checkModel(model)
 	wsql, args := p.buildWhere()
 	sql := fmt.Sprintf("SELECT TOP 1 * from %s %v", p.quote(p.model.Name), wsql)
-	rows, _ := p.orm.db.Query(sql, args...)
+	rows, _ := p.orm.db.Query(sql, convertArgs(args)...)
 	p.model.MapRowsAsObj(rows, model)
 	return true
 }
@@ -71,7 +74,7 @@ func (p *Scope) All(model T) {
 	p.checkModel(model)
 	wsql, args := p.buildWhere()
 	sql := fmt.Sprintf("SELECT * from %s %v", p.quote(p.model.Name), wsql)
-	rows, _ := p.orm.db.Query(sql, args...)
+	rows, _ := p.orm.db.Query(sql,convertArgs(args)...)
 	p.model.MapRowsAsLst(rows, model)
 }
 
@@ -81,46 +84,33 @@ func (p *Scope) Limit(offset, limit int) *Scope {
 	p.hasLimit = true
 	return p
 }
-func (p*Scope) Page(model T) *db.Paging{
-	paging:=&db.Paging{}
-	
-	
+func (p *Scope) Page(model T) *db.Paging {
+	paging := &db.Paging{}
+
 	return paging
 }
 func (p *Scope) Save(model T) *Scope {
 	p.checkModel(model)
-	var sql string
-	var args []interface{}
 	if p.Has(model) {
-		sql, args = p.buildUpdate(model)
+		p.Update(model)
 	} else {
-		sql, args = p.buildInsert(model)
+		p.Insert(model)
 	}
-	if _, err := p.orm.db.Exec(sql, args...); err != nil {
-		fmt.Println("Save:",sql)
-		fmt.Println(err)
-	}
-
 	return p
 }
 
 func (p *Scope) Insert(model T) *Scope {
 	p.checkModel(model)
 	sql, args := p.buildInsert(model)
-	if _, err := p.orm.db.Exec(sql, args...); err != nil {
-		fmt.Println("Save:",sql)
-		fmt.Println(err)
-	}
+	p.exec(sql, args...)
 	return p
 }
 
 func (p *Scope) Update(model T) *Scope {
 	p.checkModel(model)
+	p.setWhereIdIfNoWhere(model)
 	sql, args := p.buildUpdate(model)
-	if _, err := p.orm.db.Exec(sql, args...); err != nil {
-		fmt.Println("Save:",sql)
-		fmt.Println(err)
-	}
+	p.exec(sql, args...)
 	return p
 }
 
@@ -129,10 +119,7 @@ func (p *Scope) Del(model T) *Scope {
 	p.setWhereIdIfNoWhere(model)
 	wsql, args := p.buildWhere()
 	sql := fmt.Sprintf("DELETE from %s %v", p.quote(p.model.Name), wsql)
-	if _, err := p.orm.db.Exec(sql, args...); err != nil {
-		fmt.Println("Save:",sql)
-		fmt.Println(err)
-	}
+	p.exec(sql, args...)
 	return p
 }
 
@@ -195,4 +182,25 @@ func (p *Scope) setWhereIdIfNoWhere(model T) {
 	if !p.haswhere {
 		p.WhereId(p.model.IdVal(model))
 	}
+}
+
+func (p *Scope) exec(sql string, args ...interface{}) {
+	params:=convertArgs(args...)
+	if _, err := p.orm.db.Exec(sql, params...); err != nil {
+		fmt.Println(sql, args)
+		fmt.Println(err)
+	}
+}
+
+func convertArgs(args... interface{}) []interface{}{
+	params := []interface{}{}
+	for _, arg := range args {
+		switch a := arg.(type) {
+		case GUID:
+			params = append(params, string(a))
+		default:
+			params = append(params, a)
+		}
+	}
+	return params
 }

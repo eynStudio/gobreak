@@ -105,7 +105,10 @@ func (p *Orm) Del(data T) *Orm {
 	NewScope(p).Del(data)
 	return p
 }
-
+func (p *Orm) DelId(data T,id interface{}) *Orm {
+	NewScope(p).WhereId(id).Del(data)
+	return p
+}
 type User struct {
 	Id  string
 	Mc  string

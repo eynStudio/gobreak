@@ -54,8 +54,6 @@ func (p *aggCmdHandler) CanHandleCmd(cmd Cmd) bool {
 
 func (p *aggCmdHandler) HandleCmd(cmd Cmd) error {
 	var err error
-
-	fmt.Println("HandleCmd.................")
 	var aggregateType reflect.Type
 	var ok bool
 	if aggregateType, ok = p.cmdAggMap[reflect.TypeOf(cmd)]; !ok {
