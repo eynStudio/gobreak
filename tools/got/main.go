@@ -7,3 +7,7 @@ import (
 func main() {
 	fmt.Println("gobreak.tools.got!")
 }
+
+func loadCfg() {
+
+}
