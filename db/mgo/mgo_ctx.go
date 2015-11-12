@@ -37,12 +37,26 @@ func (p *MgoCtx) CopySession() *mgo.Session {
 
 func (p *MgoCtx) C(session *mgo.Session, name string) *mgo.Collection {
 	db := session.DB(p.cfg.Db)
+	if p.login(db) {
+		return db.C(name)
+	}
+	return nil
+}
+
+func (p *MgoCtx) Db() *mgo.Database {
+	db := p.CopySession().DB(p.cfg.Db)
+	if p.login(db) {
+		return db
+	}
+	return nil
+}
+
+func (p *MgoCtx) login(db *mgo.Database) bool {
 	if err := db.Login(p.cfg.User, p.cfg.Pwd); err != nil {
 		log.Error(err, "Login", "mdb.Startup")
-		return nil
+		return false
 	}
-
-	return db.C(name)
+	return true
 }
 
 func (p *MgoCtx) GetWithFields(c *mgo.Collection, id GUID, fields []string, i T) {

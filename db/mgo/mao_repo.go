@@ -39,7 +39,11 @@ func (p *mgoRepo) CopySession() *mgo.Session {
 }
 
 func (p *mgoRepo) C(session *mgo.Session) *mgo.Collection {
-	return p.Ctx.C(session, p.name)
+	if session == nil {
+		return p.Ctx.Db().C(p.name)
+	} else {
+		return p.Ctx.C(session, p.name)
+	}
 }
 
 func (p *mgoRepo) All() []T {
