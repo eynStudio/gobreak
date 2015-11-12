@@ -1,3 +1,4 @@
+//go:generate tpl2str
 package main
 
 import (
@@ -6,6 +7,8 @@ import (
 
 func main() {
 	fmt.Println("gobreak.tools.got!")
+	var g Generator
+	g.Gen()
 }
 
 func loadCfg() {
