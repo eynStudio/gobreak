@@ -40,7 +40,9 @@ func (p *Generator) Gen() {
 
 func (p *Generator) genFile(f string) {
 	bytes, _ := ioutil.ReadFile(f)
+	str:=string(bytes)
+	str=strings.Replace(str,"`","` + \"`\" + `",-1)
 	f = strings.TrimLeft(f, "tpls\\")
 	f = strings.TrimRight(f, ".tpl")
-	p.Printf("tpl_%s=`%s`", f, bytes)
+	p.Printf("tpl_%s=`%s`\n", f, str)
 }

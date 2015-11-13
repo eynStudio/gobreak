@@ -6,11 +6,8 @@ import (
 )
 
 func main() {
-	fmt.Println("gobreak.tools.got!")
+	fmt.Println("start gobreak.tools.got")
 	var g Generator
+	g.loadCfg()
 	g.Gen()
-}
-
-func loadCfg() {
-
 }
