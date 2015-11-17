@@ -16,7 +16,7 @@ type MgoRepo interface {
 	CopySession() *mgo.Session
 	C(session *mgo.Session) *mgo.Collection
 
-	Page(pf *PageFilter, lst T) (pager Paging)
+	Page(pType T, pf *PageFilter, q interface{}) (pager Paging)
 	GetByQWithFields(q bson.M, fields []string, i T)
 	ListByQWithFields(q bson.M, fields []string, i T)
 	UpdateSetFiled(id GUID, field string, value T)
@@ -54,12 +54,12 @@ func (p *mgoRepo) All() []T {
 	return p.fetchItems(iter)
 }
 
-func (p *mgoRepo) Page(pf *PageFilter, lst T) (pager Paging) {
+func (p *mgoRepo) Page(pType T, pf *PageFilter, q interface{}) (pager Paging) {
 	sess := p.Ctx.CopySession()
 	defer sess.Close()
 
-	pager.Total, _ = p.C(sess).Find(nil).Count()
-	iter := p.C(sess).Find(nil).Iter()
+	pager.Total, _ = p.C(sess).Find(q).Skip(pf.Skip()).Limit(pf.PerPage).Count()
+	iter := p.C(sess).Find(q).Iter()
 	pager.Items = p.fetchItems(iter)
 	return
 }
