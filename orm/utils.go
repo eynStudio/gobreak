@@ -6,7 +6,7 @@ import (
 	. "github.com/eynstudio/gobreak"
 )
 
-func Extend(dest, src T) {
+func Extend(dest, src T) T {
 	destModel :=getModelInfo(dest)
 	destVal := reflect.Indirect(reflect.ValueOf(dest))
 	srcVal := reflect.Indirect(reflect.ValueOf(src))
@@ -15,4 +15,9 @@ func Extend(dest, src T) {
 			destVal.FieldByName(k).Set(val)
 		}
 	}
+	return dest
+}
+
+func Map(dest,src T) T{
+	return Extend(dest,src)
 }
