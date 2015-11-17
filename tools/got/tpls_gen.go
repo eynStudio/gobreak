@@ -114,7 +114,6 @@ import (
 	. "github.com/eynstudio/gobreak/db/mgo"
 	. "github.com/eynstudio/gobreak/ddd"
 	"github.com/eynstudio/gobreak/orm"
-	"gopkg.in/mgo.v2/bson"
 )
 
 type {{.Name}}Repo struct {
