@@ -105,8 +105,13 @@ func (p *Orm) SaveAs(dest T, src T) *Orm {
 	NewScope(p).Save(Map(dest,src))
 	return p
 }
+
 func (p *Orm) Del(data T) *Orm {
 	NewScope(p).Del(data)
+	return p
+}
+func (p *Orm) DelAll(data T) *Orm {
+	NewScope(p).DelAll(data)
 	return p
 }
 func (p *Orm) DelId(data T,id interface{}) *Orm {

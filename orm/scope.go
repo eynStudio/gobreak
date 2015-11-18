@@ -123,6 +123,13 @@ func (p *Scope) Del(model T) *Scope {
 	return p
 }
 
+func (p *Scope) DelAll(model T) *Scope {
+	p.checkModel(model)
+	sql := fmt.Sprintf("DELETE from %s", p.quote(p.model.Name))
+	p.exec(sql)
+	return p
+}
+
 func (p *Scope) buildWhere() (string, []interface{}) {
 	if !p.haswhere {
 		return "", nil
