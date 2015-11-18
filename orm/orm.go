@@ -25,7 +25,7 @@ func Open(driver, source string) (*Orm, error) {
 		err = orm.db.Ping()
 	}
 
-//	orm.test()
+	//	orm.test()
 	return orm, err
 }
 
@@ -55,9 +55,9 @@ func (p *Orm) test() {
 	users = []User{}
 	p.All(&users)
 	fmt.Println(users)
-	
+
 	var user2 User2
-	Extend(&user2,u)
+	Extend(&user2, u)
 	fmt.Println(user2)
 
 }
@@ -101,8 +101,11 @@ func (p *Orm) Save(data T) *Orm {
 	NewScope(p).Save(data)
 	return p
 }
-func (p *Orm) SaveAs(dest T, src T) *Orm {
-	NewScope(p).Save(Map(dest,src))
+func (p *Orm) SaveAs(dest T, src ...T) *Orm {
+	s := NewScope(p)
+	for _, m := range src {
+		s.Save(Map(dest, m))
+	}
 	return p
 }
 
@@ -114,10 +117,11 @@ func (p *Orm) DelAll(data T) *Orm {
 	NewScope(p).DelAll(data)
 	return p
 }
-func (p *Orm) DelId(data T,id interface{}) *Orm {
+func (p *Orm) DelId(data T, id interface{}) *Orm {
 	NewScope(p).WhereId(id).Del(data)
 	return p
 }
+
 type User struct {
 	Id  string
 	Mc  string
