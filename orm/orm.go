@@ -101,6 +101,10 @@ func (p *Orm) Save(data T) *Orm {
 	NewScope(p).Save(data)
 	return p
 }
+func (p *Orm) SaveAs(dest T, src T) *Orm {
+	NewScope(p).Save(Map(dest,src))
+	return p
+}
 func (p *Orm) Del(data T) *Orm {
 	NewScope(p).Del(data)
 	return p
