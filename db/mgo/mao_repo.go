@@ -13,10 +13,15 @@ type MgoRepo interface {
 	Repo
 	NewId() GUID
 	GetAs(id T, m T)
+	GetQ(q T) T
+	GetQAs(val T,q T)
 	CopySession() *mgo.Session
 	C(session *mgo.Session) *mgo.Collection
 	Find(q interface{}) []T
 	FindAs(lst T, q interface{})
+	Has(q T) bool
+	HasId(id GUID) bool
+	Count(q T) int
 	Page(pf *PageFilter, q interface{}) (pager Paging)
 	PageAs(ptype T, pf *PageFilter, q interface{}) (pager Paging)
 	GetByQWithFields(q bson.M, fields []string, i T)
@@ -114,6 +119,39 @@ func (p *mgoRepo) GetAs(id T, m T) {
 	defer sess.Close()
 
 	p.C(sess).FindId(id).One(m)
+}
+
+func (p *mgoRepo) GetQ(q T) T {
+	sess := p.Ctx.CopySession()
+	defer sess.Close()
+	m := p.factory()
+	p.C(sess).Find(q).One(m)
+	return m
+}
+func (p *mgoRepo) GetQAs(val T,q T) {
+	sess := p.Ctx.CopySession()
+	defer sess.Close()
+	p.C(sess).Find(q).One(val)
+}
+
+func (p *mgoRepo) Has(q T) bool {
+	return p.Count(q)>0
+}
+
+func (p *mgoRepo) HasId(id GUID) bool {
+	sess := p.Ctx.CopySession()
+	defer sess.Close()
+
+	n,_:=p.C(sess).FindId(id).Count()
+	return n>0
+}
+
+func (p *mgoRepo) Count(q T) int {
+	sess := p.Ctx.CopySession()
+	defer sess.Close()
+
+	n,_:=p.C(sess).Find(q).Count()
+	return n
 }
 
 func (p *mgoRepo) Save(id T, m T) {
