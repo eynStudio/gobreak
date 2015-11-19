@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	. "github.com/eynstudio/gobreak"
+	"github.com/eynstudio/gobreak/db"
 )
 
 type Orm struct {
@@ -82,7 +83,9 @@ func (p *Orm) All(data T) T {
 	NewScope(p).All(data)
 	return data
 }
-
+func (p *Orm) Page(model T, pf *db.PageFilter) *db.Paging {
+	return NewScope(p).Page(model, pf)
+}
 func (p *Orm) One(data T) T {
 	NewScope(p).One(data)
 	return data

@@ -103,7 +103,14 @@ func (p *model) MapObjFromRowValues(cols []string, values []interface{}) reflect
 			if field.Field.Kind() == reflect.Ptr {
 				obj.FieldByName(column).Set(reflect.ValueOf(value).Elem())
 			} else if v := reflect.ValueOf(value).Elem().Elem(); v.IsValid() {
-				obj.FieldByName(column).Set(v)
+				switch field.Type.Name(){
+					case "GUID":
+						guid:=GUID(v.String())
+						guidVal:=reflect.ValueOf(guid)
+						obj.FieldByName(column).Set(guidVal)
+					default:
+						obj.FieldByName(column).Set(v)
+				}
 			}
 		}
 	}

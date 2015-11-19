@@ -43,7 +43,7 @@ func (p *Scope) Count(model T) int {
 	id := p.model.Id()
 	wsql, args := p.buildWhere()
 	sql := fmt.Sprintf("SELECT COUNT(%v) from %s %v", p.quote(id), p.quote(p.model.Name), wsql)
-	row := p.orm.db.QueryRow(sql, convertArgs(args)...)
+	row := p.orm.db.QueryRow(sql, convertArgs(args...)...)
 	count := 0
 	row.Scan(&count)
 	return count
@@ -65,7 +65,7 @@ func (p *Scope) One(model T) (has bool) {
 	p.checkModel(model)
 	wsql, args := p.buildWhere()
 	sql := fmt.Sprintf("SELECT TOP 1 * from %s %v", p.quote(p.model.Name), wsql)
-	rows, _ := p.orm.db.Query(sql, convertArgs(args)...)
+	rows, _ := p.orm.db.Query(sql, convertArgs(args...)...)
 	p.model.MapRowsAsObj(rows, model)
 	return true
 }
@@ -74,7 +74,7 @@ func (p *Scope) All(model T) {
 	p.checkModel(model)
 	wsql, args := p.buildWhere()
 	sql := fmt.Sprintf("SELECT * from %s %v", p.quote(p.model.Name), wsql)
-	rows, _ := p.orm.db.Query(sql,convertArgs(args)...)
+	rows, _ := p.orm.db.Query(sql, convertArgs(args...)...)
 	p.model.MapRowsAsLst(rows, model)
 }
 
@@ -84,8 +84,29 @@ func (p *Scope) Limit(offset, limit int) *Scope {
 	p.hasLimit = true
 	return p
 }
-func (p *Scope) Page(model T) *db.Paging {
+func (p *Scope) Page(model T, pf *db.PageFilter) *db.Paging {
+	p.checkModel(model)
+	p.Limit(pf.Skip(), pf.PerPage)
+
+	wsql, args := p.buildWhere()
+	psql, _ := p.buildPage()
+	sql := fmt.Sprintf("SELECT * from %s %v %v", p.quote(p.model.Name), wsql, psql)
+	rows, err := p.orm.db.Query(sql, convertArgs(args...)...)
+	if err!=nil{
+		fmt.Println(sql)
+		fmt.Println(convertArgs(args...)...)
+		panic(err)
+	}
+	p.model.MapRowsAsLst(rows, model)
 	paging := &db.Paging{}
+	paging.Total = p.Count(model)
+	paging.Items = model
+	return paging
+}
+func (p *Scope) PageSql(model T, pf db.PageFilter, sql string) *db.Paging {
+	p.checkModel(model)
+	paging := &db.Paging{}
+	//sql="select "
 
 	return paging
 }
@@ -143,7 +164,17 @@ func (p *Scope) buildWhere() (string, []interface{}) {
 
 	return "", nil
 }
+func (p *Scope) buildPage() (string, []interface{}) {
+	if !p.hasLimit {
+		return "", nil
+	}
 
+	if p.orm.dialect.Driver() == "mssql" {
+		return fmt.Sprintf("ORDER BY %v OFFSET %v ROW FETCH NEXT %v ROWS only", p.model.Id(), p.offset, p.limit), nil
+	}
+
+	return "", nil
+}
 func (p *Scope) buildInsert(obj T) (string, []interface{}) {
 	var cols []string
 	var params []string
@@ -192,14 +223,14 @@ func (p *Scope) setWhereIdIfNoWhere(model T) {
 }
 
 func (p *Scope) exec(sql string, args ...interface{}) {
-	params:=convertArgs(args...)
+	params := convertArgs(args...)
 	if _, err := p.orm.db.Exec(sql, params...); err != nil {
 		fmt.Println(sql, args)
 		fmt.Println(err)
 	}
 }
 
-func convertArgs(args... interface{}) []interface{}{
+func convertArgs(args ...interface{}) []interface{} {
 	params := []interface{}{}
 	for _, arg := range args {
 		switch a := arg.(type) {

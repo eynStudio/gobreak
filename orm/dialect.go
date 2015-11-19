@@ -1,15 +1,17 @@
 package orm
 
-import(
+import (
 	"fmt"
 )
+
 type Dialect interface {
 	Quote(key string) string
+	Driver() string
 }
 
 func NewDialect(driver string) Dialect {
 	var d Dialect
-	switch driver {	
+	switch driver {
 	case "mysql":
 		d = &mysql{}
 	case "mssql":
@@ -26,3 +28,5 @@ type commonDialect struct{}
 func (commonDialect) Quote(key string) string {
 	return fmt.Sprintf(`"%s"`, key)
 }
+
+func (p *commonDialect) Driver() string { return "common" }
