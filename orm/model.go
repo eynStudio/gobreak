@@ -84,6 +84,8 @@ func (p *model) GetValuesForSqlRowScan(cols []string) []interface{} {
 		if field, ok := p.Fields[column]; ok {
 			if field.Field.Kind() == reflect.Ptr {
 				values[index] = field.Field.Addr().Interface()
+			} else if field.Field.Kind() == reflect.String {
+				values[index] = reflect.New(reflect.PtrTo(reflect.TypeOf(""))).Interface()
 			} else {
 				values[index] = reflect.New(reflect.PtrTo(field.Field.Type())).Interface()
 			}
@@ -102,15 +104,12 @@ func (p *model) MapObjFromRowValues(cols []string, values []interface{}) reflect
 		if field, ok := p.Fields[column]; ok {
 			if field.Field.Kind() == reflect.Ptr {
 				obj.FieldByName(column).Set(reflect.ValueOf(value).Elem())
-			} else if v := reflect.ValueOf(value).Elem().Elem(); v.IsValid() {
-				switch field.Type.Name(){
-					case "GUID":
-						guid:=GUID(v.String())
-						guidVal:=reflect.ValueOf(guid)
-						obj.FieldByName(column).Set(guidVal)
-					default:
-						obj.FieldByName(column).Set(v)
+			} else if field.Field.Kind()==reflect.String{
+				if v := reflect.ValueOf(value).Elem().Elem(); v.IsValid() {
+					obj.FieldByName(column).SetString(v.Interface().(string))
 				}
+			} else if v := reflect.ValueOf(value).Elem().Elem(); v.IsValid() {
+				obj.FieldByName(column).Set(v)
 			}
 		}
 	}
@@ -149,9 +148,9 @@ func (p *model) MapRowsAsObj(rows *sql.Rows, out T) {
 
 func (p *model) Obj2Map(data T) map[string]interface{} {
 	val := reflect.ValueOf(data)
-	m := make(map[string]interface{}, len(p.Fields))	
+	m := make(map[string]interface{}, len(p.Fields))
 	for k := range p.Fields {
-		m[k] = val.Elem().FieldByName(k).Interface()		
+		m[k] = val.Elem().FieldByName(k).Interface()
 	}
 	return m
 }
