@@ -67,7 +67,7 @@ func (p *mgoRepo) Find(q interface{}) []T {
 func (p *mgoRepo) FindAs(lst T, q interface{}) {
 	sess := p.Ctx.CopySession()
 	defer sess.Close()
-	p.C(sess).Find(q).All(&lst)
+	p.C(sess).Find(q).All(lst)
 }
 func (p *mgoRepo) Page(pf *PageFilter, q interface{}) (pager Paging) {
 	sess := p.Ctx.CopySession()
