@@ -74,7 +74,10 @@ func (p *Scope) All(model T) {
 	p.checkModel(model)
 	wsql, args := p.buildWhere()
 	sql := fmt.Sprintf("SELECT * from %s %v", p.quote(p.model.Name), wsql)
-	rows, _ := p.orm.db.Query(sql, convertArgs(args...)...)
+	rows, err := p.orm.db.Query(sql, convertArgs(args...)...)
+	if err!=nil{
+		fmt.Println(err,sql)
+	}
 	p.model.MapRowsAsLst(rows, model)
 }
 
