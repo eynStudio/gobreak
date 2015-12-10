@@ -12,7 +12,7 @@ type TxScope struct {
 func (p *TxScope) Exec(query string, args ...interface{}) (count int64) {
 	var r sql.Result
 	if p.Err == nil {
-		if r, p.Err = p.Tx.Exec(query, args); p.Err == nil {
+		if r, p.Err = p.Tx.Exec(query, args...); p.Err == nil {
 			count, p.Err = r.RowsAffected()
 		}
 	}
@@ -27,7 +27,7 @@ func (p *TxScope) Prepare(query string) (stmt *sql.Stmt) {
 func (p *TxScope) ExecStmt(stmt *sql.Stmt, args ...interface{}) (count int64) {
 	var r sql.Result
 	if p.Err == nil {
-		if r, p.Err = stmt.Exec(args); p.Err == nil {
+		if r, p.Err = stmt.Exec(args...); p.Err == nil {
 			count, p.Err = r.RowsAffected()
 		}
 	}
