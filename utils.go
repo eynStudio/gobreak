@@ -1,6 +1,7 @@
 package gobreak
 
 import (
+	"log"
 	"errors"
 	"reflect"
 )
@@ -29,4 +30,12 @@ func MustSlicePtr(t T) {
 	if v := reflect.ValueOf(t); !IsPtr(v) || !IsSlice(v.Elem()) {
 		panic(ErrNotSlicePtr)
 	}
+}
+
+
+func Must(err error) (ok bool){
+	if err!=nil{
+		log.Fatalln(err)
+	}
+	return true
 }

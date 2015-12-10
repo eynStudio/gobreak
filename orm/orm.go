@@ -30,6 +30,12 @@ func Open(driver, source string) (*Orm, error) {
 	return orm, err
 }
 
+func MustOpen(driver, source string) *Orm {
+	o,e:=Open(driver,source)
+	Must(e)
+	return o
+}
+
 func (p *Orm) DB() *sql.DB { return p.db }
 
 func (p *Orm) test() {
