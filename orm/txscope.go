@@ -38,3 +38,16 @@ func (p *TxScope) Count(query string, args ...interface{}) (count int64) {
 	p.Err = p.QueryRow(query, args...).Scan(&count)
 	return
 }
+
+func (p *TxScope) Truncate(table string) *TxScope {
+	p.Exec("TRUNCATE TABLE " + table)
+	return p
+}
+func (p *TxScope) Commit() error {
+	defer p.Rollback()
+
+	if p.Err == nil {
+		p.Err = p.Tx.Commit()
+	}
+	return p.Err
+}
