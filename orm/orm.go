@@ -125,6 +125,12 @@ func (p *Orm) DelId(data T, id interface{}) *Orm {
 	return p
 }
 
+func (p *Orm) Begin() (ts *TxScope) {
+	ts = &TxScope{}
+	ts.Tx, ts.Err = p.db.Begin()
+	return
+}
+
 type User struct {
 	Id  string
 	Mc  string

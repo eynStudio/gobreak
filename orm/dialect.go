@@ -16,6 +16,8 @@ func NewDialect(driver string) Dialect {
 		d = &mysql{}
 	case "mssql":
 		d = &mssql{}
+	case "oci8":
+		d = &oci8{}
 	default:
 		fmt.Printf("`%v` is not officially supported, running under compatibility mode.\n", driver)
 		d = &commonDialect{}
