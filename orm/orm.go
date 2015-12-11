@@ -31,7 +31,7 @@ func Open(driver, source string) (*Orm, error) {
 }
 
 func MustOpen(driver, source string) *Orm {
-	o,e:=Open(driver,source)
+	o, e := Open(driver, source)
 	Must(e)
 	return o
 }
@@ -131,10 +131,35 @@ func (p *Orm) DelId(data T, id interface{}) *Orm {
 	return p
 }
 
-func (p *Orm) Begin() (ts *TxScope) {
+func (p *Orm) Begin() (ts *TxScope, err error) {
 	ts = &TxScope{}
-	ts.Tx, ts.Err = p.db.Begin()
+	ts.Tx, err = p.db.Begin()
 	return
+}
+
+func (p *Orm) Transact(txFunc func(*TxScope) error) (err error) {
+	tx, err := p.Begin()
+	if err != nil {
+		return
+	}
+
+	defer func() {
+		err = tx.Commit()
+		//		if p := recover(); p != nil {
+		//			switch p := p.(type) {
+		//			case error:
+		//				err = p
+		//			default:
+		//				err = fmt.Errorf("%s", p)
+		//			}
+		//		}
+		//		if err != nil {
+		//			tx.Rollback()
+		//			return
+		//		}
+		//		err = tx.Commit()
+	}()
+	return txFunc(tx)
 }
 
 type User struct {
