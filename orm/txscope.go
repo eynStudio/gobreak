@@ -7,48 +7,48 @@ import (
 
 type TxScope struct {
 	*sql.Tx
-	Err error
 }
 
-func (p *TxScope) Exec(query string, args ...interface{}) (count int64) {
-	var r sql.Result
-	if r, p.Err = p.Tx.Exec(query, args...); p.Err != nil {
-		panic(p.Err)
+func (p *TxScope) Exec(query string, args ...interface{}) int64 {
+	if r, err := p.Tx.Exec(query, args...); err != nil {
+		panic(err)
+	} else {
+		return p.getAffectedRows(r)
 	}
-	if count, p.Err = r.RowsAffected(); p.Err != nil {
-		panic(p.Err)
-	}
-	return
 }
 
-func (p *TxScope) Prepare(query string) (stmt *sql.Stmt) {
-	if stmt, p.Err = p.Tx.Prepare(query); p.Err != nil {
-		panic(p.Err)
+func (p *TxScope) Prepare(query string) *sql.Stmt {
+	if stmt, err := p.Tx.Prepare(query); err != nil {
+		panic(err)
+	} else {
+		return stmt
 	}
-	return
 }
 
-func (p *TxScope) ExecStmt(stmt *sql.Stmt, args ...interface{}) (count int64) {
-	var r sql.Result
-	if r, p.Err = stmt.Exec(args...); p.Err != nil {
-		panic(p.Err)
+func (p *TxScope) ExecStmt(stmt *sql.Stmt, args ...interface{}) int64 {
+	if r, err := stmt.Exec(args...); err != nil {
+		panic(err)
+	} else {
+		return p.getAffectedRows(r)
 	}
-	if count, p.Err = r.RowsAffected(); p.Err != nil {
-		panic(p.Err)
-	}
-	return
 }
 
+func (p *TxScope) getAffectedRows(r sql.Result) int64 {
+	if count, err := r.RowsAffected(); err != nil {
+		panic(err)
+	} else {
+		return count
+	}
+}
 func (p *TxScope) Count(query string, args ...interface{}) (count int64) {
-	if p.Err = p.QueryRow(query, args...).Scan(&count); p.Err != nil {
-		panic(p.Err)
+	if err := p.QueryRow(query, args...).Scan(&count); err != nil {
+		panic(err)
 	}
 	return
 }
 
-func (p *TxScope) Truncate(table string) *TxScope {
-	p.Exec("TRUNCATE TABLE " + table)
-	return p
+func (p *TxScope) Truncate(table string) int64 {
+	return p.Exec("TRUNCATE TABLE " + table)
 }
 
 func (p *TxScope) Commit() (err error) {

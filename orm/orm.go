@@ -137,7 +137,7 @@ func (p *Orm) Begin() (ts *TxScope, err error) {
 	return
 }
 
-func (p *Orm) Transact(txFunc func(*TxScope) error) (err error) {
+func (p *Orm) Transact(txFunc func(*TxScope)) (err error) {
 	tx, err := p.Begin()
 	if err != nil {
 		return
@@ -159,7 +159,8 @@ func (p *Orm) Transact(txFunc func(*TxScope) error) (err error) {
 		//		}
 		//		err = tx.Commit()
 	}()
-	return txFunc(tx)
+	txFunc(tx)
+	return
 }
 
 type User struct {
