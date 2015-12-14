@@ -137,6 +137,13 @@ func (p *Orm) Begin() (ts *TxScope, err error) {
 	return
 }
 
+
+func (p *Orm) RawCount(query string, args ...interface{}) (count int64) {
+	if err :=p.db.QueryRow(query, args...).Scan(&count); err != nil {
+		return 0
+	}
+	return
+}
 func (p *Orm) Transact(txFunc func(*TxScope)) (err error) {
 	tx, err := p.Begin()
 	if err != nil {
