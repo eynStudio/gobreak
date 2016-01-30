@@ -89,6 +89,10 @@ func (p *Orm) All(data T) T {
 	NewScope(p).All(data)
 	return data
 }
+func (p *Orm) Query(data T, query string, args ...interface{}) T {
+	NewScope(p).Query(data, query, args...)
+	return data
+}
 func (p *Orm) Page(model T, pf *db.PageFilter) *db.Paging {
 	return NewScope(p).Page(model, pf)
 }
@@ -137,9 +141,8 @@ func (p *Orm) Begin() (ts *TxScope, err error) {
 	return
 }
 
-
 func (p *Orm) RawCount(query string, args ...interface{}) (count int64) {
-	if err :=p.db.QueryRow(query, args...).Scan(&count); err != nil {
+	if err := p.db.QueryRow(query, args...).Scan(&count); err != nil {
 		return 0
 	}
 	return

@@ -75,8 +75,17 @@ func (p *Scope) All(model T) {
 	wsql, args := p.buildWhere()
 	sql := fmt.Sprintf("SELECT * from %s %v", p.quote(p.model.Name), wsql)
 	rows, err := p.orm.db.Query(sql, convertArgs(args...)...)
-	if err!=nil{
-		fmt.Println(err,sql)
+	if err != nil {
+		fmt.Println(err, sql)
+	}
+	p.model.MapRowsAsLst(rows, model)
+}
+
+func (p *Scope) Query(model T, query string, args ...interface{}) {
+	p.checkModel(model)
+	rows, err := p.orm.db.Query(query, args...)
+	if err != nil {
+		fmt.Println(err, query)
 	}
 	p.model.MapRowsAsLst(rows, model)
 }
@@ -95,7 +104,7 @@ func (p *Scope) Page(model T, pf *db.PageFilter) *db.Paging {
 	psql, _ := p.buildPage()
 	sql := fmt.Sprintf("SELECT * from %s %v %v", p.quote(p.model.Name), wsql, psql)
 	rows, err := p.orm.db.Query(sql, convertArgs(args...)...)
-	if err!=nil{
+	if err != nil {
 		fmt.Println(sql)
 		fmt.Println(convertArgs(args...)...)
 		panic(err)
