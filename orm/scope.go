@@ -16,6 +16,7 @@ type Scope struct {
 	whereid   interface{}
 	wheresql  string
 	whereargs []interface{}
+	pf        *db.PageFilter
 	offset    int
 	limit     int
 	hasLimit  bool
@@ -98,8 +99,9 @@ func (p *Scope) Limit(offset, limit int) *Scope {
 }
 func (p *Scope) Page(model T, pf *db.PageFilter) *db.Paging {
 	p.checkModel(model)
+	p.pf = pf
+	p.haswhere = true
 	p.Limit(pf.Skip(), pf.PerPage)
-
 	wsql, args := p.buildWhere()
 	psql, _ := p.buildPage()
 	sql := fmt.Sprintf("SELECT * from %s %v %v", p.quote(p.model.Name), wsql, psql)
@@ -170,12 +172,41 @@ func (p *Scope) buildWhere() (string, []interface{}) {
 		return fmt.Sprintf("WHERE (%v=?)", p.quote(p.model.Id())), []interface{}{p.whereid}
 	} else if len(p.wheresql) > 0 {
 		return "WHERE " + p.wheresql, p.whereargs
+	} else if p.pf != nil {
+		visitor := db.FilterVisitor{}
+		wsql, args := visitor.Visitor(p.pf.FilterGroup)
+		if wsql != "" {
+			wsql = "WHERE " + wsql
+		}
+		return wsql, args
 	} else if len(p.where) > 0 {
 
 	}
 
 	return "", nil
 }
+
+//func (p *Scope) buildPageWhere(pf *db.PageFilter) (string, []interface{}) {
+//	visitor := db.FilterVisitor{}
+//	wsql, args := visitor.Visitor(pf.FilterGroup)
+
+//	if wsql != "" {
+//		wsql = "WHERE " + wsql
+//	}
+//	return wsql, args
+//	//	if !p.haswhere {
+//	//		return "", nil
+//	//	} else if p.whereid != nil {
+//	//		return fmt.Sprintf("WHERE (%v=?)", p.quote(p.model.Id())), []interface{}{p.whereid}
+//	//	} else if len(p.wheresql) > 0 {
+//	//		return "WHERE " + p.wheresql, p.whereargs
+//	//	} else if len(p.where) > 0 {
+
+//	//	}
+
+//	//	return "", nil
+//}
+
 func (p *Scope) buildPage() (string, []interface{}) {
 	if !p.hasLimit {
 		return "", nil
