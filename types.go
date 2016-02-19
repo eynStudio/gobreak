@@ -44,6 +44,15 @@ func (p Params) Get(key string) *KeyValue {
 	return nil
 }
 
+func (p Params) GetAll(key string) (lst []KeyValue) {
+	for _, it := range p {
+		if it.K == key {
+			lst = append(lst, it)
+		}
+	}
+	return
+}
+
 func (p Params) GetValue(key string) string {
 	for _, it := range p {
 		if it.K == key {
@@ -51,6 +60,15 @@ func (p Params) GetValue(key string) string {
 		}
 	}
 	return ""
+}
+
+func (p Params) GetValues(key string) (strs []string) {
+	for _, it := range p {
+		if it.K == key {
+			strs = append(strs, it.V)
+		}
+	}
+	return
 }
 
 type KeyValues map[string][]string
