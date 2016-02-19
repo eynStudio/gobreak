@@ -15,6 +15,44 @@ type KeyValue struct {
 	V string `V`
 }
 
+type Params []KeyValue
+
+func (p Params) Has(k, v string) bool {
+	for _, it := range p {
+		if it.K == k && it.V == v {
+			return true
+		}
+	}
+	return false
+}
+
+func (p Params) HasKey(key string) bool {
+	for _, it := range p {
+		if it.K == key {
+			return true
+		}
+	}
+	return false
+}
+
+func (p Params) Get(key string) *KeyValue {
+	for _, it := range p {
+		if it.K == key {
+			return &it
+		}
+	}
+	return nil
+}
+
+func (p Params) GetValue(key string) string {
+	for _, it := range p {
+		if it.K == key {
+			return it.V
+		}
+	}
+	return ""
+}
+
 type KeyValues map[string][]string
 
 func AsKeyValues(lst []KeyValue) (kvs KeyValues) {
