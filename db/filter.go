@@ -15,7 +15,7 @@ func (p *FilterVisitor) Visitor(filter FilterGroup) (wsql string, args []interfa
 }
 
 func (p *FilterVisitor) VisitGroup(f FilterGroup) (wsql string, args []interface{}) {
-	if f.Con == "and" {
+	if f.Con == "and" || f.Con == "or" {
 		if len(f.Rules) == 0 {
 			return
 		} else if len(f.Rules) == 1 {
@@ -38,7 +38,9 @@ func (p *FilterVisitor) VisitGroup(f FilterGroup) (wsql string, args []interface
 }
 
 func (p *FilterVisitor) VisitRule(f FilterRule) (wsql string, args []interface{}) {
-	if f.O == "=" {
+	if f.O == "like" {
+		return fmt.Sprintf("%s %s ?", f.F, f.O), append(args, "%"+f.V1.(string)+"%")
+	} else if f.O == "=" {
 		return fmt.Sprintf("%s %s ?", f.F, f.O), append(args, f.V1)
 	} else if f.O == "in" {
 		var ss []string
@@ -71,11 +73,15 @@ type FilterGroup struct {
 func NewAndFilterGroup() (fg FilterGroup) {
 	return FilterGroup{Con: "and"}
 }
+func NewOrFilterGroup() (fg FilterGroup) {
+	return FilterGroup{Con: "or"}
+}
 
 type PageFilter struct {
 	FilterGroup
 	Page    int
 	PerPage int
+	Search  string
 }
 
 func NewPageFilter(page, perPage int, field string, val1 T) *PageFilter {
