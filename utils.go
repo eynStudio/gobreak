@@ -1,8 +1,8 @@
 package gobreak
 
 import (
-	"log"
 	"errors"
+	"log"
 	"reflect"
 )
 
@@ -32,10 +32,17 @@ func MustSlicePtr(t T) {
 	}
 }
 
-
-func Must(err error) (ok bool){
-	if err!=nil{
+func Must(err error) (ok bool) {
+	if err != nil {
 		log.Fatalln(err)
 	}
 	return true
+}
+
+func IfElse(is bool, If, Else interface{}) interface{} {
+	if is {
+		return If
+	} else {
+		return Else
+	}
 }
