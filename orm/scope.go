@@ -2,6 +2,7 @@ package orm
 
 import (
 	"fmt"
+	"log"
 	"strings"
 
 	. "github.com/eynstudio/gobreak"
@@ -64,8 +65,10 @@ func (p *Scope) Has(model T) bool {
 }
 func (p *Scope) One(model T) (has bool) {
 	p.checkModel(model)
-	wsql, args := p.buildWhere()
-	sql := fmt.Sprintf("SELECT TOP 1 * from %s %v", p.quote(p.model.Name), wsql)
+	//	wsql, args := p.buildWhere()
+	//	sql := fmt.Sprintf("SELECT TOP 1 * from %s %v", p.quote(p.model.Name), wsql)
+	sql, args := p.orm.dialect.BulidTopNSql(p, 1)
+	log.Println(sql, args)
 	rows, _ := p.orm.db.Query(sql, convertArgs(args...)...)
 	p.model.MapRowsAsObj(rows, model)
 	return true

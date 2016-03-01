@@ -7,6 +7,7 @@ import (
 type Dialect interface {
 	Quote(key string) string
 	Driver() string
+	BulidTopNSql(s *Scope, n int) (string, []interface{})
 }
 
 func NewDialect(driver string) Dialect {
@@ -32,3 +33,7 @@ func (commonDialect) Quote(key string) string {
 }
 
 func (p *commonDialect) Driver() string { return "common" }
+
+func (p *commonDialect) BulidTopNSql(s *Scope, n int) (string, []interface{}) {
+	return "", nil
+}
