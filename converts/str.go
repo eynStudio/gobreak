@@ -15,3 +15,7 @@ func Str2F32(str string, defaultVal float32) float32 {
 	}
 	return defaultVal
 }
+
+func F64Str(val float64) string {
+	return strconv.FormatFloat(val, 'f', -1, 64)
+}
