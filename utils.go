@@ -39,6 +39,13 @@ func Must(err error) (ok bool) {
 	return true
 }
 
+func LogErr(err error) error {
+	if err != nil {
+		log.Printf("%#v", err)
+	}
+	return err
+}
+
 func IfElse(is bool, If, Else interface{}) interface{} {
 	if is {
 		return If
