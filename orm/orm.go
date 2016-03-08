@@ -2,7 +2,6 @@ package orm
 
 import (
 	"database/sql"
-	"fmt"
 
 	. "github.com/eynstudio/gobreak"
 	"github.com/eynstudio/gobreak/db"
@@ -37,37 +36,6 @@ func MustOpen(driver, source string) *Orm {
 }
 
 func (p *Orm) DB() *sql.DB { return p.db }
-
-func (p *Orm) test() {
-	u := &User{"insert12", "insert222", 9990}
-	//	p.Update(u)
-	p.Save(u)
-	p.Where("age=?", 99).Del(&User{})
-	p.Del(&User{Id: "insert1"})
-
-	fmt.Println(p.Count(&User{}))
-	fmt.Println(p.Where("age=?", 99).Count(&User{}))
-	fmt.Println(p.WhereId("aaaa").Count(&User{}))
-	fmt.Printf("Has:%v\n", p.HasId(&User{}, "aaaa"))
-
-	var user User
-	p.Where("age=?", 99).One(&user)
-	fmt.Printf("One:%v\n", user)
-	p.One(&user)
-	fmt.Printf("One:%v\n", user)
-
-	var users []User = []User{}
-	p.Where("age=?", 99).All(&users)
-	fmt.Println(users)
-	users = []User{}
-	p.All(&users)
-	fmt.Println(users)
-
-	var user2 User2
-	Extend(&user2, u)
-	fmt.Println(user2)
-
-}
 
 func (p *Orm) Where(sql string, args ...interface{}) *Scope {
 	return NewScope(p).Where(sql, args...)
@@ -171,16 +139,4 @@ func (p *Orm) Transact(txFunc func(*TxScope)) (err error) {
 	}()
 	txFunc(tx)
 	return
-}
-
-type User struct {
-	Id  string
-	Mc  string
-	Age int
-}
-
-type User2 struct {
-	Id  string
-	Xm  string
-	Age int
 }
