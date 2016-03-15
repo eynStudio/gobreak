@@ -27,3 +27,13 @@ func FmtNy(ny string) string {
 	m, _ := strconv.Atoi(ny[4:])
 	return fmt.Sprintf("%d年%d月", y, m)
 }
+
+func FmtRq(ny string) string {
+	if len(ny) != 6 {
+		return ""
+	}
+	y, _ := strconv.Atoi(ny[:4])
+	m, _ := strconv.Atoi(ny[4:6])
+	d, _ := strconv.Atoi(ny[6:])
+	return fmt.Sprintf("%d年%d月%d日", y, m, d)
+}
