@@ -16,7 +16,7 @@ func IfThenInt(t bool, y, n int) int {
 	}
 }
 
-func IfThenFloat64(t bool, y, n float64) float64 {
+func IfThenF64(t bool, y, n float64) float64 {
 	if t {
 		return y
 	} else {
