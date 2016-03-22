@@ -1,8 +1,10 @@
 package gobreak
 
 import (
+	"bufio"
 	"encoding/json"
 	"io/ioutil"
+	"os"
 )
 
 func LoadJson(file string, model T) bool {
@@ -16,4 +18,19 @@ func LoadJson(file string, model T) bool {
 	}
 
 	return true
+}
+
+func ReadLines(f string) (lines []string, err error) {
+	var file *os.File
+	if file, err = os.Open(f); err != nil {
+		return
+	}
+
+	reader := bufio.NewReader(file)
+	bs := bufio.NewScanner(reader)
+	for bs.Scan() {
+		l := bs.Text()
+		lines = append(lines, l)
+	}
+	return
 }
