@@ -16,10 +16,14 @@ type VisitorResults []VisitorResult
 func (p VisitorResults) Join(con string) (vr VisitorResult) {
 	var sqls []string
 	for _, it := range p {
-		sqls = append(sqls, it.Sql)
-		vr.Args = append(vr.Args, it.Args...)
+		if it.Sql != "" {
+			sqls = append(sqls, it.Sql)
+			vr.Args = append(vr.Args, it.Args...)
+		}
 	}
-	vr.Sql = "(" + strings.Join(sqls, " "+con+" ") + ")"
+	if len(sqls) > 0 {
+		vr.Sql = "(" + strings.Join(sqls, " "+con+" ") + ")"
+	}
 	return
 }
 
