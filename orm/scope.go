@@ -189,27 +189,6 @@ func (p *Scope) buildWhere() (string, []interface{}) {
 	return "", nil
 }
 
-//func (p *Scope) buildPageWhere(pf *db.PageFilter) (string, []interface{}) {
-//	visitor := db.FilterVisitor{}
-//	wsql, args := visitor.Visitor(pf.FilterGroup)
-
-//	if wsql != "" {
-//		wsql = "WHERE " + wsql
-//	}
-//	return wsql, args
-//	//	if !p.haswhere {
-//	//		return "", nil
-//	//	} else if p.whereid != nil {
-//	//		return fmt.Sprintf("WHERE (%v=?)", p.quote(p.model.Id())), []interface{}{p.whereid}
-//	//	} else if len(p.wheresql) > 0 {
-//	//		return "WHERE " + p.wheresql, p.whereargs
-//	//	} else if len(p.where) > 0 {
-
-//	//	}
-
-//	//	return "", nil
-//}
-
 func (p *Scope) buildPage() (string, []interface{}) {
 	if !p.hasLimit {
 		return "", nil

@@ -7,49 +7,66 @@ import (
 	. "github.com/eynstudio/gobreak"
 )
 
+type VisitorResult struct {
+	Sql  string
+	Args []interface{}
+}
+type VisitorResults []VisitorResult
+
+func (p VisitorResults) Join(con string) (vr VisitorResult) {
+	var sqls []string
+	for _, it := range p {
+		sqls = append(sqls, it.Sql)
+		vr.Args = append(vr.Args, it.Args...)
+	}
+	vr.Sql = "(" + strings.Join(sqls, " "+con+" ") + ")"
+	return
+}
+
 type FilterVisitor struct {
 }
 
 func (p *FilterVisitor) Visitor(filter FilterGroup) (wsql string, args []interface{}) {
-	return p.VisitGroup(filter)
+	r := p.VisitGroup(filter)
+	return r.Sql, r.Args
 }
 
-func (p *FilterVisitor) VisitGroup(f FilterGroup) (wsql string, args []interface{}) {
-	if f.Con == "and" || f.Con == "or" {
-		if len(f.Rules) == 0 {
-			return
-		} else if len(f.Rules) == 1 {
-			return p.VisitRule(f.Rules[0])
-		} else {
-			wsql, args = p.VisitRule(f.Rules[0])
-			for _, it := range f.Rules[1:] {
-				w, a := p.VisitRule(it)
-				wsql = wsql + " " + f.Con + " " + w
-				args = append(args, a...)
-			}
-			return
-		}
+func (p *FilterVisitor) VisitGroup(f FilterGroup) (vr VisitorResult) {
+	var lst VisitorResults
 
-	} else if f.Con == "or" {
+	ruleResult := p.VisitRules(f.Con, f.Rules)
+	lst = append(lst, ruleResult)
 
+	for _, it := range f.Groups {
+		lst = append(lst, p.VisitGroup(it))
 	}
 
-	return
+	return lst.Join(f.Con)
 }
 
-func (p *FilterVisitor) VisitRule(f FilterRule) (wsql string, args []interface{}) {
+func (p *FilterVisitor) VisitRules(con string, rules []FilterRule) (vr VisitorResult) {
+	var lst VisitorResults
+	for _, it := range rules {
+		lst = append(lst, p.VisitRule(it))
+	}
+	return lst.Join(con)
+}
+
+func (p *FilterVisitor) VisitRule(f FilterRule) (vr VisitorResult) {
 	if f.O == "like" {
-		return fmt.Sprintf("%s %s ?", f.F, f.O), append(args, "%"+f.V1.(string)+"%")
+		vr.Sql = fmt.Sprintf("%s %s ?", f.F, f.O)
+		vr.Args = append(vr.Args, "%"+f.V1.(string)+"%")
 	} else if f.O == "=" {
-		return fmt.Sprintf("%s %s ?", f.F, f.O), append(args, f.V1)
+		vr.Sql = fmt.Sprintf("%s %s ?", f.F, f.O)
+		vr.Args = append(vr.Args, f.V1)
 	} else if f.O == "in" {
 		var ss []string
 		for _, it := range f.V1.([]string) {
 			ss = append(ss, "?")
-			args = append(args, it)
+			vr.Args = append(vr.Args, it)
 		}
 		vs := strings.Join(ss, ",")
-		return fmt.Sprintf("%s %s (%s)", f.F, f.O, vs), args
+		vr.Sql = fmt.Sprintf("%s %s (%s)", f.F, f.O, vs)
 	}
 	return
 }
@@ -68,6 +85,13 @@ type FilterGroup struct {
 	Con    string
 	Rules  []FilterRule
 	Groups []FilterGroup
+}
+
+func (p *FilterGroup) AddRule(r FilterRule) {
+	p.Rules = append(p.Rules, r)
+}
+func (p *FilterGroup) AddGroup(g FilterGroup) {
+	p.Groups = append(p.Groups, g)
 }
 
 func NewAndFilterGroup() (fg FilterGroup) {
