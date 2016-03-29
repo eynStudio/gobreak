@@ -7,13 +7,9 @@ import (
 	. "github.com/eynstudio/gobreak"
 )
 
-type VisitorResult struct {
-	Sql  string
-	Args []interface{}
-}
-type VisitorResults []VisitorResult
+type VisitorResults []SqlArgs
 
-func (p VisitorResults) Join(con string) (vr VisitorResult) {
+func (p VisitorResults) Join(con string) (vr SqlArgs) {
 	var sqls []string
 	for _, it := range p {
 		if it.Sql != "" {
@@ -30,12 +26,11 @@ func (p VisitorResults) Join(con string) (vr VisitorResult) {
 type FilterVisitor struct {
 }
 
-func (p *FilterVisitor) Visitor(filter FilterGroup) (wsql string, args []interface{}) {
-	r := p.VisitGroup(filter)
-	return r.Sql, r.Args
+func (p *FilterVisitor) Visitor(filter FilterGroup) SqlArgs {
+	return p.VisitGroup(filter)
 }
 
-func (p *FilterVisitor) VisitGroup(f FilterGroup) (vr VisitorResult) {
+func (p *FilterVisitor) VisitGroup(f FilterGroup) (vr SqlArgs) {
 	var lst VisitorResults
 
 	ruleResult := p.VisitRules(f.Con, f.Rules)
@@ -48,7 +43,7 @@ func (p *FilterVisitor) VisitGroup(f FilterGroup) (vr VisitorResult) {
 	return lst.Join(f.Con)
 }
 
-func (p *FilterVisitor) VisitRules(con string, rules []FilterRule) (vr VisitorResult) {
+func (p *FilterVisitor) VisitRules(con string, rules []FilterRule) (vr SqlArgs) {
 	var lst VisitorResults
 	for _, it := range rules {
 		lst = append(lst, p.VisitRule(it))
@@ -56,7 +51,7 @@ func (p *FilterVisitor) VisitRules(con string, rules []FilterRule) (vr VisitorRe
 	return lst.Join(con)
 }
 
-func (p *FilterVisitor) VisitRule(f FilterRule) (vr VisitorResult) {
+func (p *FilterVisitor) VisitRule(f FilterRule) (vr SqlArgs) {
 	if f.O == "like" {
 		vr.Sql = fmt.Sprintf("%s %s ?", f.F, f.O)
 		vr.Args = append(vr.Args, "%"+f.V1.(string)+"%")

@@ -2,12 +2,13 @@ package orm
 
 import (
 	"fmt"
+	"github.com/eynstudio/gobreak/db"
 )
 
 type Dialect interface {
 	Quote(key string) string
 	Driver() string
-	BulidTopNSql(s *Scope, n int) (string, []interface{})
+	BulidTopNSql(s *Scope, n int) db.SqlArgs
 }
 
 func NewDialect(driver string) Dialect {
@@ -28,12 +29,6 @@ func NewDialect(driver string) Dialect {
 
 type commonDialect struct{}
 
-func (commonDialect) Quote(key string) string {
-	return fmt.Sprintf(`"%s"`, key)
-}
-
-func (p *commonDialect) Driver() string { return "common" }
-
-func (p *commonDialect) BulidTopNSql(s *Scope, n int) (string, []interface{}) {
-	return "", nil
-}
+func (commonDialect) Quote(key string) string                         { return fmt.Sprintf(`"%s"`, key) }
+func (p *commonDialect) Driver() string                               { return "common" }
+func (p *commonDialect) BulidTopNSql(s *Scope, n int) (sa db.SqlArgs) { return }

@@ -78,6 +78,12 @@ func (p *Orm) Update(data T) *Orm {
 	NewScope(p).Update(data)
 	return p
 }
+
+func (p *Orm) UpdateFields(data T, fields []string) *Orm {
+	NewScope(p).UpdateFields(data, fields)
+	return p
+}
+
 func (p *Orm) Save(data T) *Orm {
 	NewScope(p).Save(data)
 	return p
