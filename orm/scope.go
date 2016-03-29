@@ -156,7 +156,7 @@ func (p *Scope) Update(model T) *Scope {
 func (p *Scope) UpdateFields(model T, fields []string) *Scope {
 	p.checkModel(model)
 	p.setWhereIdIfNoWhere(model)
-	sa := p.buildUpdate(model)
+	sa := p.buildUpdateFields(model, fields)
 	p.exec(sa)
 	return p
 }
@@ -236,6 +236,24 @@ func (p *Scope) buildUpdate(obj T) (sa db.SqlArgs) {
 	for k, v := range m {
 		cols = append(cols, p.quote(k)+"=?")
 		sa.AddArgs(v)
+	}
+	sa.AddArgs(w.Args...)
+
+	sa.Sql = fmt.Sprintf("UPDATE %s SET %v %v", p.quote(p.model.Name), strings.Join(cols, ","), w.Sql)
+	return
+}
+
+func (p *Scope) buildUpdateFields(obj T, fields []string) (sa db.SqlArgs) {
+	w := p.buildWhere()
+	var cols []string
+	m := p.model.Obj2Map(obj)
+	for k, v := range m {
+		for _, it := range fields {
+			if it == k {
+				cols = append(cols, p.quote(k)+"=?")
+				sa.AddArgs(v)
+			}
+		}
 	}
 	sa.AddArgs(w.Args...)
 
