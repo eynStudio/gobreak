@@ -10,6 +10,10 @@ import (
 type VisitorResults []SqlArgs
 
 func (p VisitorResults) Join(con string) (vr SqlArgs) {
+	if con == "" {
+		con = "and"
+	}
+
 	var sqls []string
 	for _, it := range p {
 		if it.Sql != "" {
@@ -54,13 +58,14 @@ func (p *FilterVisitor) VisitRules(con string, rules []FilterRule) (vr SqlArgs) 
 func (p *FilterVisitor) VisitRule(f FilterRule) (vr SqlArgs) {
 	if f.O == "like" {
 		vr.Sql = fmt.Sprintf("%s %s ?", f.F, f.O)
-		vr.Args = append(vr.Args, "%"+f.V1.(string)+"%")
+		vr.Args = append(vr.Args, "%"+f.V1+"%")
 	} else if f.O == "=" {
 		vr.Sql = fmt.Sprintf("%s %s ?", f.F, f.O)
 		vr.Args = append(vr.Args, f.V1)
 	} else if f.O == "in" {
 		var ss []string
-		for _, it := range f.V1.([]string) {
+		vlst := strings.Split(f.V1, ",")
+		for _, it := range vlst {
 			ss = append(ss, "?")
 			vr.Args = append(vr.Args, it)
 		}
@@ -76,8 +81,8 @@ type Filter interface {
 type FilterRule struct {
 	F  string
 	O  string
-	V1 T
-	V2 T
+	V1 string
+	V2 string
 }
 
 type FilterGroup struct {
@@ -107,7 +112,7 @@ type PageFilter struct {
 	Search  string
 }
 
-func NewPageFilter(page, perPage int, field string, val1 T) *PageFilter {
+func NewPageFilter(page, perPage int, field string, val1 string) *PageFilter {
 	p := &PageFilter{
 		Page:    page,
 		PerPage: perPage,
