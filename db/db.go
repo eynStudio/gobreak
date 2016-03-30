@@ -1,7 +1,5 @@
 package db
 
-type M map[string]interface{}
-
 type SqlArgs struct {
 	Sql  string
 	Args []interface{}

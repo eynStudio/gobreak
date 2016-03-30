@@ -23,3 +23,11 @@ func IfThenF64(t bool, y, n float64) float64 {
 		return n
 	}
 }
+
+func IfThenBool(t bool, y, n bool) bool {
+	if t {
+		return y
+	} else {
+		return n
+	}
+}
