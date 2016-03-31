@@ -75,9 +75,6 @@ func (p *FilterVisitor) VisitRule(f FilterRule) (vr SqlArgs) {
 	return
 }
 
-type Filter interface {
-}
-
 type FilterRule struct {
 	F  string
 	O  string
@@ -91,41 +88,29 @@ type FilterGroup struct {
 	Groups []FilterGroup
 }
 
-func (p *FilterGroup) AddRule(r FilterRule) {
-	p.Rules = append(p.Rules, r)
-}
-func (p *FilterGroup) AddGroup(g FilterGroup) {
-	p.Groups = append(p.Groups, g)
-}
+func (p *FilterGroup) AddRule(r FilterRule)   { p.Rules = append(p.Rules, r) }
+func (p *FilterGroup) AddGroup(g FilterGroup) { p.Groups = append(p.Groups, g) }
+func NewAndFilterGroup() (fg FilterGroup)     { return FilterGroup{Con: "and"} }
+func NewOrFilterGroup() (fg FilterGroup)      { return FilterGroup{Con: "or"} }
 
-func NewAndFilterGroup() (fg FilterGroup) {
-	return FilterGroup{Con: "and"}
-}
-func NewOrFilterGroup() (fg FilterGroup) {
-	return FilterGroup{Con: "or"}
-}
-
-type PageFilter struct {
+type Filter struct {
 	FilterGroup
-	Page    int
-	PerPage int
-	Search  string
+	Ext M
 }
+
+type PageFilter struct{ Filter }
+
+func (p *Filter) Search() string   { return p.Ext.GetStr("search") }
+func (p *Filter) Role() string     { return p.Ext.GetStr("role") }
+func (p *PageFilter) Page() int    { return int(p.Ext.GetInt("page")) }
+func (p *PageFilter) PerPage() int { return int(p.Ext.GetInt("perPage")) }
+func (p *PageFilter) Skip() int    { return (p.Page() - 1) * p.PerPage() }
 
 func NewPageFilter(page, perPage int, field string, val1 string) *PageFilter {
-	p := &PageFilter{
-		Page:    page,
-		PerPage: perPage,
-	}
-	p.Rules = append(p.Rules, FilterRule{
-		F:  field,
-		V1: val1,
-	})
+	p := &PageFilter{}
+	p.Ext = M{"page": page, "perPage": perPage}
+	p.Rules = append(p.Rules, FilterRule{F: field, V1: val1})
 	return p
-}
-
-func (p *PageFilter) Skip() int {
-	return (p.Page - 1) * p.PerPage
 }
 
 type Paging struct {

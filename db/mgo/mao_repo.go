@@ -14,7 +14,7 @@ type MgoRepo interface {
 	NewId() GUID
 	GetAs(id T, m T)
 	GetQ(q T) T
-	GetQAs(val T,q T)
+	GetQAs(val T, q T)
 	CopySession() *mgo.Session
 	C(session *mgo.Session) *mgo.Collection
 	Find(q interface{}) []T
@@ -74,7 +74,7 @@ func (p *mgoRepo) Page(pf *PageFilter, q interface{}) (pager Paging) {
 	defer sess.Close()
 
 	pager.Total, _ = p.C(sess).Find(q).Count()
-	iter := p.C(sess).Find(q).Skip(pf.Skip()).Limit(pf.PerPage).Iter()
+	iter := p.C(sess).Find(q).Skip(pf.Skip()).Limit(pf.PerPage()).Iter()
 	pager.Items = p.fetchItems(iter)
 	return
 }
@@ -84,7 +84,7 @@ func (p *mgoRepo) PageAs(pslice T, pf *PageFilter, q interface{}) (pager Paging)
 	defer sess.Close()
 
 	pager.Total, _ = p.C(sess).Find(q).Count()
-	p.C(sess).Find(q).Skip(pf.Skip()).Limit(pf.PerPage).All(pslice)
+	p.C(sess).Find(q).Skip(pf.Skip()).Limit(pf.PerPage()).All(pslice)
 	pager.Items = pslice
 	return
 
@@ -128,29 +128,29 @@ func (p *mgoRepo) GetQ(q T) T {
 	p.C(sess).Find(q).One(m)
 	return m
 }
-func (p *mgoRepo) GetQAs(val T,q T) {
+func (p *mgoRepo) GetQAs(val T, q T) {
 	sess := p.Ctx.CopySession()
 	defer sess.Close()
 	p.C(sess).Find(q).One(val)
 }
 
 func (p *mgoRepo) Has(q T) bool {
-	return p.Count(q)>0
+	return p.Count(q) > 0
 }
 
 func (p *mgoRepo) HasId(id GUID) bool {
 	sess := p.Ctx.CopySession()
 	defer sess.Close()
 
-	n,_:=p.C(sess).FindId(id).Count()
-	return n>0
+	n, _ := p.C(sess).FindId(id).Count()
+	return n > 0
 }
 
 func (p *mgoRepo) Count(q T) int {
 	sess := p.Ctx.CopySession()
 	defer sess.Close()
 
-	n,_:=p.C(sess).Find(q).Count()
+	n, _ := p.C(sess).Find(q).Count()
 	return n
 }
 

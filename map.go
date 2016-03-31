@@ -2,6 +2,10 @@ package gobreak
 
 type M map[string]T
 
+func (p M) HasKey(k string) bool {
+	_, ok := p[k]
+	return ok
+}
 func (p M) GetStrOr(k, or string) string {
 	if v, ok := p[k]; ok {
 		return v.(string)

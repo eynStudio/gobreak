@@ -105,7 +105,7 @@ func (p *Scope) Page(model T, pf *db.PageFilter) *db.Paging {
 	p.checkModel(model)
 	p.pf = pf
 	p.haswhere = true
-	p.Limit(pf.Skip(), pf.PerPage)
+	p.Limit(pf.Skip(), pf.PerPage())
 	w := p.buildWhere()
 	psa := p.buildPage()
 	sql := fmt.Sprintf("SELECT * from %s %v %v", p.quote(p.model.Name), w.Sql, psa.Sql)
