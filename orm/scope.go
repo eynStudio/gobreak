@@ -6,6 +6,7 @@ import (
 
 	. "github.com/eynstudio/gobreak"
 	"github.com/eynstudio/gobreak/db"
+	"github.com/eynstudio/gobreak/db/filter"
 )
 
 type Scope struct {
@@ -16,7 +17,7 @@ type Scope struct {
 	whereid   interface{}
 	wheresql  string
 	whereargs []interface{}
-	pf        *db.PageFilter
+	pf        *filter.PageFilter
 	offset    int
 	limit     int
 	hasLimit  bool
@@ -101,7 +102,7 @@ func (p *Scope) Limit(offset, limit int) *Scope {
 	p.hasLimit = true
 	return p
 }
-func (p *Scope) Page(model T, pf *db.PageFilter) *db.Paging {
+func (p *Scope) Page(model T, pf *filter.PageFilter) *db.Paging {
 	p.checkModel(model)
 	p.pf = pf
 	p.haswhere = true
@@ -121,7 +122,7 @@ func (p *Scope) Page(model T, pf *db.PageFilter) *db.Paging {
 	paging.Items = model
 	return paging
 }
-func (p *Scope) PageSql(model T, pf db.PageFilter, sql string) *db.Paging {
+func (p *Scope) PageSql(model T, pf filter.PageFilter, sql string) *db.Paging {
 	p.checkModel(model)
 	paging := &db.Paging{}
 	//sql="select "
@@ -188,8 +189,8 @@ func (p *Scope) buildWhere() (sa db.SqlArgs) {
 		sa.Sql = "WHERE " + p.wheresql
 		sa.AddArgs(p.whereargs...)
 	} else if p.pf != nil {
-		visitor := db.FilterVisitor{}
-		sa = visitor.Visitor(p.pf.FilterGroup)
+		visitor := filter.Visitor{}
+		sa = visitor.Visitor(p.pf.Group)
 		if sa.Sql != "" {
 			sa.Sql = "WHERE " + sa.Sql
 		}

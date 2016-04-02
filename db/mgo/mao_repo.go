@@ -3,10 +3,9 @@ package mgo
 import (
 	. "github.com/eynstudio/gobreak"
 	. "github.com/eynstudio/gobreak/db"
-	//	. "github.com/eynstudio/gobreak/ddd"
+	. "github.com/eynstudio/gobreak/db/filter"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
-	//	"reflect"
 )
 
 type MgoRepo interface {
