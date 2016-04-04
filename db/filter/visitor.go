@@ -56,13 +56,30 @@ func (p *Visitor) VisitRules(con string, rules []Rule) (vr SqlArgs) {
 }
 
 func (p *Visitor) VisitRule(f Rule) (vr SqlArgs) {
-	if f.O == "like" {
+	switch f.O {
+	case "like", "start", "end":
+		vr.Sql = fmt.Sprintf("%s like ?", f.F)
+		switch f.O {
+		case "like":
+			vr.AddArgs("%" + f.V1 + "%")
+		case "start":
+			vr.AddArgs(f.V1 + "%")
+		case "end":
+			vr.AddArgs("%" + f.V1)
+		}
+	case "!like":
+		vr.Sql = fmt.Sprintf("%s not like ?", f.F)
+		vr.AddArgs("%" + f.V1 + "%")
+	case "=", "<>":
 		vr.Sql = fmt.Sprintf("%s %s ?", f.F, f.O)
-		vr.Args = append(vr.Args, "%"+f.V1+"%")
-	} else if f.O == "=" {
-		vr.Sql = fmt.Sprintf("%s %s ?", f.F, f.O)
-		vr.Args = append(vr.Args, f.V1)
-	} else if f.O == "in" {
+		vr.AddArgs(f.V1)
+	case "empty":
+		vr.Sql = fmt.Sprintf("%s = ?", f.F)
+		vr.AddArgs("")
+	case "!empty":
+		vr.Sql = fmt.Sprintf("%s <> ?", f.F)
+		vr.AddArgs("")
+	case "in":
 		var ss []string
 		vlst := strings.Split(f.V1, ",")
 		for _, it := range vlst {
