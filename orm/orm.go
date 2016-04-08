@@ -6,6 +6,7 @@ import (
 	. "github.com/eynstudio/gobreak"
 	"github.com/eynstudio/gobreak/db"
 	"github.com/eynstudio/gobreak/db/filter"
+	"github.com/eynstudio/gobreak/db/meta"
 )
 
 type Orm struct {
@@ -36,7 +37,8 @@ func MustOpen(driver, source string) *Orm {
 	return o
 }
 
-func (p *Orm) DB() *sql.DB { return p.db }
+func (p *Orm) DB() *sql.DB            { return p.db }
+func (p *Orm) LoadMeta() *meta.MetaDb { return p.dialect.LoadMeta(p.db) }
 
 func (p *Orm) Where(sql string, args ...interface{}) *Scope {
 	return NewScope(p).Where(sql, args...)

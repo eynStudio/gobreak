@@ -1,14 +1,18 @@
 package orm
 
 import (
+	"database/sql"
 	"fmt"
+
 	"github.com/eynstudio/gobreak/db"
+	"github.com/eynstudio/gobreak/db/meta"
 )
 
 type Dialect interface {
 	Quote(key string) string
 	Driver() string
 	BulidTopNSql(s *Scope, n int) db.SqlArgs
+	LoadMeta(*sql.DB) *meta.MetaDb
 }
 
 func NewDialect(driver string) Dialect {
@@ -32,3 +36,4 @@ type commonDialect struct{}
 func (commonDialect) Quote(key string) string                         { return fmt.Sprintf(`"%s"`, key) }
 func (p *commonDialect) Driver() string                               { return "common" }
 func (p *commonDialect) BulidTopNSql(s *Scope, n int) (sa db.SqlArgs) { return }
+func (p *commonDialect) LoadMeta(*sql.DB) *meta.MetaDb                { return nil }
