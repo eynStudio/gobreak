@@ -52,6 +52,9 @@ func (p *MgoCtx) Db() *mgo.Database {
 }
 
 func (p *MgoCtx) login(db *mgo.Database) bool {
+	if p.cfg.Pwd == "" {
+		return true
+	}
 	if err := db.Login(p.cfg.User, p.cfg.Pwd); err != nil {
 		log.Error(err, "Login", "mdb.Startup")
 		return false
