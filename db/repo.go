@@ -14,6 +14,7 @@ type Repo interface {
 	Get(id T) T
 	Save(id T, m T)
 	Del(id T)
+	GetName() string
 }
 
 type MemoryRepo struct {
@@ -24,6 +25,9 @@ func NewMemoryRepoRepo() *MemoryRepo {
 	return &MemoryRepo{
 		data: make(map[GUID]T),
 	}
+}
+func (p *MemoryRepo) GetName() string {
+	return ""
 }
 
 func (p *MemoryRepo) Save(id GUID, model T) error {

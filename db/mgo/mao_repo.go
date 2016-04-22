@@ -40,6 +40,8 @@ func NewMgoRepo(name string, factory func() T) *mgoRepo {
 	return &mgoRepo{name: name, factory: factory}
 }
 
+func (p *mgoRepo) GetName() string { return p.name }
+
 func (p *mgoRepo) CopySession() *mgo.Session {
 	return p.Ctx.CopySession()
 }
