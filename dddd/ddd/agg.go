@@ -1,23 +1,23 @@
-package dddd
+package ddd
 
 import (
 	. "github.com/eynstudio/gobreak"
-	. "github.com/eynstudio/gobreak/dddd/cmdbus"
 )
 
 type Agg interface {
 	ID() GUID
+	Root() Entity
 	HandleCmd(Cmd) error
 	RegistedCmds() []Cmd
-	ApplyEvent(events Event)
+	ApplyEvent(events Event) //?需要？
 }
 
 type AggBase struct {
-	Root        Entity
 	uncommitted []Event
 }
 
-func (p *AggBase) ID() GUID            { return p.Root.ID() }
+func (p *AggBase) ID() GUID            { return p.Root().ID() }
+func (p *AggBase) Root() Entity        { return nil }
 func (p *AggBase) HandleCmd(Cmd) error { return nil }
 
 func (a *AggBase) StoreEvent(event Event)        { a.uncommitted = append(a.uncommitted, event) }

@@ -1,10 +1,10 @@
 package user
 
 import (
-	. "github.com/eynstudio/gobreak"
-	. "github.com/eynstudio/gobreak/dddd"
-	"github.com/eynstudio/gobreak/dddd/cmdbus"
 	"log"
+
+	. "github.com/eynstudio/gobreak"
+	. "github.com/eynstudio/gobreak/dddd/ddd"
 )
 
 func init() {
@@ -13,30 +13,37 @@ func init() {
 }
 
 type User struct {
-	Name string
-	Age  int
+	Id   GUID   `bson:"_id,omitempty"`
+	Name string `Name`
+	Age  int    `Age`
 }
 
 type UserAgg struct {
 	AggBase
+	User
 }
 
-type SaveUser struct{}
-type UpdateAge struct{}
-type UserSaved struct{}
-type UserUpdated struct{}
+type SaveUser User
+type UpdateAge struct {
+	Id  GUID
+	Age int
+}
+type UserSaved User
+type UserUpdated UpdateAge
 
-func (p *UserAgg) Root() *User { return p.AggBase.Root.(*User) }
+func (p *UserAgg) Root() Entity { return &p.User }
 
-func (p User) ID() GUID                       { return "" }
-func (p SaveUser) ID() GUID                   { return "" }
-func (p *UpdateAge) ID() GUID                 { return "" }
-func (p *UserSaved) ID() GUID                 { return "" }
-func (p *UserUpdated) ID() GUID               { return "" }
-func (p *UserAgg) RegistedCmds() []cmdbus.Cmd { return []cmdbus.Cmd{&SaveUser{}, &UpdateAge{}} }
+func (p User) ID() GUID    { return p.Id }
+func (p UserAgg) ID() GUID { return p.Root().ID() }
 
-func (p *UserAgg) HandleCmd(cmd cmdbus.Cmd) error {
-	log.Println(cmd)
+func (p SaveUser) ID() GUID            { return p.Id }
+func (p *UpdateAge) ID() GUID          { return p.Id }
+func (p *UserSaved) ID() GUID          { return p.Id }
+func (p *UserUpdated) ID() GUID        { return p.Id }
+func (p *UserAgg) RegistedCmds() []Cmd { return []Cmd{&SaveUser{}, &UpdateAge{}} }
+
+func (p *UserAgg) HandleCmd(cmd Cmd) error {
+	log.Println("useragg handle cmd", cmd)
 	switch cmd := cmd.(type) {
 	case *SaveUser:
 		p.ApplyEvent((*UserSaved)(cmd))

@@ -1,13 +1,10 @@
 package eventbus
 
 import (
-	. "github.com/eynstudio/gobreak"
 	"log"
-)
 
-type Event interface {
-	ID() GUID
-}
+	. "github.com/eynstudio/gobreak"
+)
 
 func Publish(event Event) {
 	log.Println("publish event ", event)

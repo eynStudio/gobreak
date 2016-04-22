@@ -1,9 +1,13 @@
-package dddd
+package cmdbus
 
 import (
 	"errors"
-	. "github.com/eynstudio/gobreak/dddd/cmdbus"
+	"log"
 	"reflect"
+
+	. "github.com/eynstudio/gobreak/dddd/ddd"
+	"github.com/eynstudio/gobreak/dddd/store"
+	"github.com/eynstudio/gobreak/di"
 )
 
 var (
@@ -15,8 +19,9 @@ var (
 type aggCmdHandler struct {
 }
 
-func (p *aggCmdHandler) SetAgg(agg Agg) error {
+func SetAgg(agg Agg) error {
 	aggType := reflect.TypeOf(agg)
+	aggType = di.Ptr2Elem(aggType)
 	for _, c := range agg.RegistedCmds() {
 		cmdType := reflect.TypeOf(c)
 		if _, ok := cmdAggMap[cmdType]; ok {
@@ -32,7 +37,16 @@ func (p *aggCmdHandler) CanHandle(cmd Cmd) bool {
 	return ok
 }
 
-func (p *aggCmdHandler) Handle(cmd Cmd) error {
+func (p *aggCmdHandler) Handle(cmd Cmd) (err error) {
+	log.Println("agg cmd handler")
 
-	return nil
+	var agg Agg
+	if aggType, ok := cmdAggMap[reflect.TypeOf(cmd)]; !ok {
+		return ErrAggregateNotFound
+	} else if agg, err = store.Load(aggType, cmd.ID()); err == nil {
+		if err = agg.HandleCmd(cmd); err == nil {
+			err = store.Save(agg)
+		}
+	}
+	return
 }

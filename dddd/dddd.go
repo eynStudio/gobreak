@@ -1,16 +1,24 @@
 package dddd
 
 import (
+	"log"
+
 	. "github.com/eynstudio/gobreak"
+	"github.com/eynstudio/gobreak/db"
 	"github.com/eynstudio/gobreak/dddd/cmdbus"
+	"github.com/eynstudio/gobreak/dddd/ddd"
+	"github.com/eynstudio/gobreak/dddd/store"
+	"github.com/eynstudio/gobreak/di"
 )
 
 func init() {
-	cmdbus.SetHandler(&aggCmdHandler{})
+	log.Println("dddd init")
 }
 
-type Event interface {
-	ID() GUID
+func Reg(agg ddd.Agg, repo db.Repo) {
+	di.Map(repo)
+	store.RegRepo(agg, repo)
+	cmdbus.SetAgg(agg)
 }
 
 type IdMsg struct {

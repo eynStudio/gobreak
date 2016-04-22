@@ -2,8 +2,10 @@ package di
 
 import (
 	"fmt"
-	. "github.com/eynstudio/gobreak"
+	"log"
 	"reflect"
+
+	. "github.com/eynstudio/gobreak"
 )
 
 var Root Container = New()
@@ -19,18 +21,26 @@ type Container interface {
 	Set(reflect.Type, reflect.Value) Container
 	Get(reflect.Type) reflect.Value
 	SetParent(Container) Container
+	ShowItems()
 }
+
+func Invoke(f T) ([]reflect.Value, error)               { return Root.Invoke(f) }
+func Apply(val T) error                                 { return Root.Apply(val) }
+func ApplyAndMap(val T) error                           { return Root.ApplyAndMap(val) }
+func ApplyAndMapAs(val T, ifacePtr T) error             { return Root.ApplyAndMapAs(val, ifacePtr) }
+func Map(val T) Container                               { return Root.Map(val) }
+func MapAs(val T, ifacePtr T) Container                 { return Root.MapAs(val, ifacePtr) }
+func Set(typ reflect.Type, val reflect.Value) Container { return Root.Set(typ, val) }
+func Get(t reflect.Type) reflect.Value                  { return Root.Get(t) }
+
+func Exec(fv reflect.Value, args []reflect.Type) ([]reflect.Value, error) { return Root.Exec(fv, args) }
 
 type container struct {
 	items  map[reflect.Type]reflect.Value
 	parent Container
 }
 
-func New() Container {
-	return &container{
-		items: make(map[reflect.Type]reflect.Value),
-	}
-}
+func New() Container { return &container{items: make(map[reflect.Type]reflect.Value)} }
 
 func (this *container) Invoke(f T) ([]reflect.Value, error) {
 	t := reflect.TypeOf(f)
@@ -39,11 +49,11 @@ func (this *container) Invoke(f T) ([]reflect.Value, error) {
 }
 
 func (this *container) Exec(fv reflect.Value, args []reflect.Type) ([]reflect.Value, error) {
-	vals, err := this.getVals(args)
-	if err != nil {
+	if vals, err := this.getVals(args); err == nil {
+		return fv.Call(vals), nil
+	} else {
 		return nil, err
 	}
-	return fv.Call(vals), nil
 }
 
 func (this *container) getVals(types []reflect.Type) ([]reflect.Value, error) {
@@ -86,9 +96,7 @@ func (this *container) Apply(val T) error {
 	}
 	return nil
 }
-func (this *container) ApplyAndMap(val T) error {
-	return this.Map(val).Apply(val)
-}
+func (this *container) ApplyAndMap(val T) error { return this.Map(val).Apply(val) }
 
 func (this *container) ApplyAndMapAs(val T, ifacePtr T) error {
 	return this.MapAs(val, ifacePtr).Apply(val)
@@ -112,7 +120,7 @@ func (this *container) Set(typ reflect.Type, val reflect.Value) Container {
 
 func (this *container) Get(t reflect.Type) reflect.Value {
 	val := this.items[t]
-
+	log.Println(val, this.items)
 	if val.IsValid() {
 		return val
 	}
@@ -136,4 +144,8 @@ func (this *container) Get(t reflect.Type) reflect.Value {
 func (this *container) SetParent(parent Container) Container {
 	this.parent = parent
 	return this
+}
+
+func (this *container) ShowItems() {
+	log.Println(this.items)
 }
