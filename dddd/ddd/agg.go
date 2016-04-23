@@ -10,6 +10,9 @@ type Agg interface {
 	HandleCmd(Cmd) error
 	RegistedCmds() []Cmd
 	ApplyEvent(events Event) //?需要？
+	GetUncommittedEvents() []Event
+	ClearUncommittedEvents()
+	HasUncommittedEvents() bool
 }
 
 type AggBase struct {

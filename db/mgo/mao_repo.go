@@ -11,7 +11,7 @@ import (
 type MgoRepo interface {
 	Repo
 	NewId() GUID
-	GetAs(id T, m T)
+	//	GetAs(id T, m T)
 	GetQ(q T) T
 	GetQAs(val T, q T)
 	CopySession() *mgo.Session

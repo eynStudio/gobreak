@@ -1,8 +1,6 @@
 package dddd
 
 import (
-	"log"
-
 	. "github.com/eynstudio/gobreak"
 	"github.com/eynstudio/gobreak/db"
 	"github.com/eynstudio/gobreak/dddd/cmdbus"
@@ -10,10 +8,6 @@ import (
 	"github.com/eynstudio/gobreak/dddd/store"
 	"github.com/eynstudio/gobreak/di"
 )
-
-func init() {
-	log.Println("dddd init")
-}
 
 func Reg(agg ddd.Agg, repo db.Repo) {
 	di.Map(repo)

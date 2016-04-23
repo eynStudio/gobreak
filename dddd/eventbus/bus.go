@@ -1,11 +1,9 @@
 package eventbus
 
 import (
-	"log"
-
-	. "github.com/eynstudio/gobreak"
+	. "github.com/eynstudio/gobreak/dddd/ddd"
 )
 
 func Publish(event Event) {
-	log.Println("publish event ", event)
+
 }

@@ -2,6 +2,7 @@ package db
 
 import (
 	"errors"
+
 	. "github.com/eynstudio/gobreak"
 )
 
@@ -14,6 +15,7 @@ type Repo interface {
 	Get(id T) T
 	Save(id T, m T)
 	Del(id T)
+	GetAs(id T, m T)
 	GetName() string
 }
 
@@ -30,6 +32,8 @@ func (p *MemoryRepo) GetName() string {
 	return ""
 }
 
+func (p *MemoryRepo) GetAs(id T, m T) {
+}
 func (p *MemoryRepo) Save(id GUID, model T) error {
 	p.data[id] = model
 	return nil

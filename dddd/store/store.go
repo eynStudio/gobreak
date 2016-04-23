@@ -8,6 +8,7 @@ import (
 	. "github.com/eynstudio/gobreak"
 	. "github.com/eynstudio/gobreak/db"
 	. "github.com/eynstudio/gobreak/dddd/ddd"
+	"github.com/eynstudio/gobreak/dddd/eventbus"
 	"github.com/eynstudio/gobreak/di"
 )
 
@@ -18,41 +19,47 @@ var (
 )
 
 func Save(agg Agg) error {
+	events := agg.GetUncommittedEvents()
+	if len(events) == 0 {
+		return nil
+	}
+
+	for _, event := range events {
+		eventbus.Publish(event)
+	}
+
+	agg.ClearUncommittedEvents()
+
+	if repo, ok := getRepoByAgg(reflect.TypeOf(agg)); ok {
+		repo.Save(agg.ID(), agg.Root())
+	} else {
+		log.Println("no repo")
+	}
 	return nil
 }
 
 func Load(aggType reflect.Type, id GUID) (Agg, error) {
-	if repoType, ok := aggMap[aggType]; ok {
-		log.Println(repoType)
+	if repoType, ok := aggMap[di.Ptr2Elem(aggType)]; ok {
 		if repo := di.Get(repoType); repo.IsValid() {
 			r := repo.Interface().(Repo)
-			a := r.Get(id)
-			log.Println(a)
-
 			agg := reflect.New(aggType).Interface().(Agg)
-			log.Println(aggType, id, agg)
+			r.GetAs(id, agg.Root())
 			return agg, nil
 		}
 	}
-
-	//	if f, ok := p.callbacks[aggregateType]; ok {
-	//		return p.EventStore.Load(f(id))
-	//	} else {
-	//		return nil, ErrAggregateNotRegistered
-	//	}
-
 	return nil, errors.New("error")
 }
 
-//func Load(agg Agg) (Agg, error) {
-//	//	if name, ok := aggMap[reflect.TypeOf(agg)]; ok {
-//	//		if repo, ok := repoMap[name]; ok {
-
-//	//		}
-//	//	}
-
-//	return nil, nil
-//}
+func getRepoByAgg(aggType reflect.Type) (Repo, bool) {
+	if repoType, ok := aggMap[di.Ptr2Elem(aggType)]; ok {
+		if repo := di.Get(repoType); repo.IsValid() {
+			if r := repo.Interface().(Repo); r != nil {
+				return r, true
+			}
+		}
+	}
+	return nil, false
+}
 
 func RegRepo(agg Agg, repo Repo) {
 	aggMap[di.Ptr2Elem(reflect.TypeOf(agg))] = reflect.TypeOf(repo)

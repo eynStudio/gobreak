@@ -2,7 +2,6 @@ package cmdbus
 
 import (
 	"errors"
-	"log"
 
 	. "github.com/eynstudio/gobreak/dddd/ddd"
 )
@@ -18,13 +17,9 @@ func SetHandler(handler CmdHandler) {
 }
 
 func Exec(cmd Cmd) error {
-	log.Println("cmdbus.exec", cmd)
-
 	if _aggCmdHandler.CanHandle(cmd) {
 		return _aggCmdHandler.Handle(cmd)
 	}
-
-	log.Println("cmdbus.exec...........", cmd)
 
 	err := ErrHandlerNotFound
 	for h := range handlers {

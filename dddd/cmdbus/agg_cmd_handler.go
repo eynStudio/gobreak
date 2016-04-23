@@ -2,7 +2,6 @@ package cmdbus
 
 import (
 	"errors"
-	"log"
 	"reflect"
 
 	. "github.com/eynstudio/gobreak/dddd/ddd"
@@ -38,8 +37,6 @@ func (p *aggCmdHandler) CanHandle(cmd Cmd) bool {
 }
 
 func (p *aggCmdHandler) Handle(cmd Cmd) (err error) {
-	log.Println("agg cmd handler")
-
 	var agg Agg
 	if aggType, ok := cmdAggMap[reflect.TypeOf(cmd)]; !ok {
 		return ErrAggregateNotFound

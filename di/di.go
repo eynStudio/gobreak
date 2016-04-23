@@ -120,7 +120,6 @@ func (this *container) Set(typ reflect.Type, val reflect.Value) Container {
 
 func (this *container) Get(t reflect.Type) reflect.Value {
 	val := this.items[t]
-	log.Println(val, this.items)
 	if val.IsValid() {
 		return val
 	}
