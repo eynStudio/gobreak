@@ -2,6 +2,7 @@ package gobreak
 
 import (
 	"log"
+	"sort"
 )
 
 type M map[string]T
@@ -41,6 +42,19 @@ func (p M) GetBoolOr(k string, or bool) bool {
 	return or
 }
 func (p M) GetBool(k string) bool { return p.GetBoolOr(k, false) }
+
+func (p M) GetKeys() (keys []string) {
+	for k := range p {
+		keys = append(keys, k)
+	}
+	return
+}
+
+func (p M) GetSortedKeys() (keys []string) {
+	keys = p.GetKeys()
+	sort.Strings(keys)
+	return
+}
 
 func getValAsInt(v T) int {
 	switch t := v.(type) {
