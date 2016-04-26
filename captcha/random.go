@@ -2,6 +2,7 @@ package captcha
 
 import (
 	"math/rand"
+	"strconv"
 	"time"
 )
 
@@ -9,10 +10,9 @@ func init() {
 	rand.Seed(time.Now().UnixNano())
 }
 
-func RandomDigits(length int) (b []byte) {
-	b = make([]byte, length)
+func RandomDigits(length int) (str string) {
 	for i := 0; i < length; i++ {
-		b[i] = byte(rand.Intn(10))
+		str += strconv.Itoa(rand.Intn(10))
 	}
 	return
 }
