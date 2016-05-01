@@ -4,8 +4,9 @@ type T interface{}
 
 type GUID string
 
-func (p GUID) ID() GUID      { return p }
-func (p GUID) IsEmpty() bool { return len(p) == 0 }
+func (p GUID) ID() GUID       { return p }
+func (p GUID) String() string { return string(p) }
+func (p GUID) IsEmpty() bool  { return len(p) == 0 }
 
 type Entity interface {
 	ID() GUID

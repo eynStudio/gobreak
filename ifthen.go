@@ -31,3 +31,11 @@ func IfThenBool(t bool, y, n bool) bool {
 		return n
 	}
 }
+
+func IfThenErr(t bool, y, n error) error {
+	if t {
+		return y
+	} else {
+		return n
+	}
+}
