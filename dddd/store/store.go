@@ -31,7 +31,11 @@ func Save(agg Agg) error {
 	agg.ClearUncommittedEvents()
 
 	if repo, ok := getRepoByAgg(reflect.TypeOf(agg)); ok {
-		repo.Save(agg.ID(), agg.Root())
+		if agg.IsDeleted() {
+			repo.Del(agg.ID())
+		} else {
+			repo.Save(agg.ID(), agg.Root())
+		}
 	} else {
 		log.Println("no repo")
 	}

@@ -3,6 +3,7 @@ package redis
 import (
 	"bytes"
 	"encoding/json"
+	"reflect"
 
 	. "github.com/eynstudio/gobreak"
 	"github.com/garyburd/redigo/redis"
@@ -22,6 +23,7 @@ func (p *Hash) Exists(id string) bool {
 }
 
 func (p *Hash) Get(id string) (interface{}, error) { return _redis.do("HGET", p.Name, id) }
+func (p *Hash) Vals() (interface{}, error)         { return _redis.do("HVALS", p.Name) }
 func (p *Hash) Set(id string, t T) (interface{}, error) {
 	return _redis.do("HSET", p.Name, id, t)
 }
@@ -36,6 +38,23 @@ func (p *JsonHash) Get(id string, t T) error {
 		return err
 	} else {
 		return json.Unmarshal(data, &t)
+	}
+}
+
+func (p *JsonHash) Vals(t T) error {
+	if data, err := redis.ByteSlices(_redis.do("HVALS", p.Name)); err != nil {
+		return err
+	} else {
+		resultv := reflect.ValueOf(t)
+		slicev := resultv.Elem()
+		elem := reflect.TypeOf(t).Elem().Elem()
+		for _, it := range data {
+			itm := reflect.New(elem)
+			json.Unmarshal(it, itm.Interface())
+			slicev = reflect.Append(slicev, itm.Elem())
+		}
+		resultv.Elem().Set(slicev.Slice(0, slicev.Len()))
+		return nil
 	}
 }
 
