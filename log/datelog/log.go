@@ -17,6 +17,7 @@ type DateLog struct {
 
 func New(path string) *DateLog {
 	l := &DateLog{outPath: path, curDate: time.Now()}
+	l.Err = os.MkdirAll(path, 0644)
 	l.openFile()
 	return l
 }
@@ -45,11 +46,12 @@ func (p *DateLog) checkFile() {
 }
 
 func (p *DateLog) getFileName() string {
-	return fmt.Sprintf("%s/%s.log", p.curDate.Format("20060102"))
+	return fmt.Sprintf("%s/%s.log", p.outPath, p.curDate.Format("20060102"))
 }
 
 func (p *DateLog) openFile() {
 	p.file, p.Err = os.OpenFile(p.getFileName(), os.O_CREATE|os.O_APPEND|os.O_RDWR, 0664)
+	p.LogErr()
 }
 
 func (p *DateLog) Close() {
