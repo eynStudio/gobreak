@@ -13,7 +13,7 @@ type JsonHash struct {
 	Hash
 }
 
-func (p *JsonHash) Get(id string, t T) (has bool, err error) {
+func (p *JsonHash) Get(id, t T) (has bool, err error) {
 	data, err := p.GetBytes(id)
 	switch err {
 	case nil:
@@ -42,7 +42,7 @@ func (p *JsonHash) Vals(t T) error {
 	}
 }
 
-func (p *JsonHash) Set(id string, t T) error {
+func (p *JsonHash) Set(id, t T) error {
 	if data, err := json.Marshal(t); err != nil {
 		return err
 	} else {
@@ -50,7 +50,7 @@ func (p *JsonHash) Set(id string, t T) error {
 	}
 }
 
-func (p *JsonHash) SetIfDiff(id string, t T) (changed bool, e error) {
+func (p *JsonHash) SetIfDiff(id, t T) (changed bool, e error) {
 	if ok, err := p.Exists(id); err != nil {
 		return false, err
 	} else if !ok {
