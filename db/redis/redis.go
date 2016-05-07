@@ -3,6 +3,7 @@ package redis
 import (
 	"time"
 
+	"github.com/eynstudio/gobreak/log/datelog"
 	"github.com/garyburd/redigo/redis"
 )
 
@@ -12,6 +13,10 @@ func Init(host, pwd string) { _redis.Init(host, pwd) }
 func Do(cmd string, args ...interface{}) (reply interface{}, err error) {
 	return _redis.do(cmd, args...)
 }
+
+var Log = _redis.log.Log
+var Logf = _redis.log.Logf
+var Logln = _redis.log.Logln
 
 var Int = redis.Int
 var Int64 = redis.Int64
@@ -33,9 +38,11 @@ type Redis struct {
 	dbpool *redis.Pool
 	host   string
 	pwd    string
+	log    *datelog.DateLog
 }
 
 func (p *Redis) Init(host, pwd string) {
+	p.log = datelog.New("./logs/redis")
 	p.host = host
 	p.pwd = pwd
 	p.dbpool = &redis.Pool{
