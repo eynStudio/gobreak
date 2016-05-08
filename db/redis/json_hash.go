@@ -46,7 +46,7 @@ func (p *JsonHash) Set(id, t T) error {
 	if data, err := json.Marshal(t); err != nil {
 		return err
 	} else {
-		return p.Set(id, data)
+		return p.Hash.Set(id, data)
 	}
 }
 
