@@ -1,6 +1,7 @@
 package redis
 
 import (
+	. "github.com/eynstudio/gobreak"
 	"time"
 
 	"github.com/garyburd/redigo/redis"
@@ -8,7 +9,7 @@ import (
 
 var _redis Redis
 
-func Init(host, pwd string) { _redis.Init(host, pwd) }
+func Init(server, pwd string) { _redis.Init(server, pwd) }
 func Do(cmd string, args ...interface{}) (reply interface{}, err error) {
 	return _redis.do(cmd, args...)
 }
@@ -30,31 +31,59 @@ var IntMap = redis.IntMap
 var Int64Map = redis.Int64Map
 
 type Redis struct {
-	dbpool *redis.Pool
-	host   string
-	pwd    string
+	pool *redis.Pool
 }
 
-func (p *Redis) Init(host, pwd string) {
-	p.host = host
-	p.pwd = pwd
-	p.dbpool = &redis.Pool{
-		MaxIdle:     20,
-		MaxActive:   10000,
-		IdleTimeout: 180 * time.Second,
+func newPool(server, password string) *redis.Pool {
+	return &redis.Pool{
+		MaxIdle:     3,
+		IdleTimeout: 240 * time.Second,
 		Dial: func() (redis.Conn, error) {
-			if c, err := redis.Dial("tcp", host); err != nil {
+			c, err := redis.Dial("tcp", server)
+			if err != nil {
 				return nil, err
-			} else {
-				c.Do("AUTH", pwd)
-				return c, nil
 			}
+			if _, err := c.Do("AUTH", password); err != nil {
+				c.Close()
+				return nil, err
+			}
+			return c, err
+		},
+		TestOnBorrow: func(c redis.Conn, t time.Time) error {
+			_, err := c.Do("PING")
+			return err
 		},
 	}
 }
 
+func (p *Redis) Init(server, pwd string) {
+	p.pool = newPool(server, pwd)
+}
+
 func (p *Redis) do(cmd string, args ...interface{}) (reply interface{}, err error) {
-	rc := p.dbpool.Get()
+	rc := p.pool.Get()
 	defer rc.Close()
 	return rc.Do(cmd, args...)
+}
+
+func (p *Redis) Do(cmd string, args ...interface{}) (c Cmd) {
+	rc := p.pool.Get()
+	defer rc.Close()
+	c.reply, c.Err = rc.Do(cmd, args...)
+	return
+}
+
+type Cmd struct {
+	Error
+	reply T
+}
+
+func (p *Cmd) Bytes() (bytes []byte) {
+	bytes, p.Err = redis.Bytes(p.reply, p.Err)
+	return
+}
+
+func (p *Cmd) Int() (i int) {
+	i, p.Err = redis.Int(p.reply, p.Err)
+	return
 }

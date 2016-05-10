@@ -27,3 +27,6 @@ func (p *Hash) Del(id string) (err error) {
 	_, err = _redis.do("HDEL", p.Name, id)
 	return
 }
+
+func (p *Redis) Hget(k string, f T) Cmd    { return p.Do("HGET", k, f) }
+func (p *Redis) Hset(k string, f, v T) Cmd { return p.Do("HSET", k, f, v) }
