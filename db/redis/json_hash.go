@@ -13,11 +13,15 @@ type JsonHash struct {
 	Hash
 }
 
-func (p *JsonHash) Get(id string, t T) error {
-	if data, err := p.GetBytes(id); err != nil {
-		return err
-	} else {
-		return json.Unmarshal(data, &t)
+func (p *JsonHash) Get(id, t T) (has bool, err error) {
+	data, err := p.GetBytes(id)
+	switch err {
+	case nil:
+		return true, json.Unmarshal(data, &t)
+	case redis.ErrNil:
+		return false, nil
+	default:
+		return false, err
 	}
 }
 
@@ -38,15 +42,15 @@ func (p *JsonHash) Vals(t T) error {
 	}
 }
 
-func (p *JsonHash) Set(id string, t T) error {
+func (p *JsonHash) Set(id, t T) error {
 	if data, err := json.Marshal(t); err != nil {
 		return err
 	} else {
-		return p.Set(id, data)
+		return p.Hash.Set(id, data)
 	}
 }
 
-func (p *JsonHash) SetIfDiff(id string, t T) (changed bool, e error) {
+func (p *JsonHash) SetIfDiff(id, t T) (changed bool, e error) {
 	if ok, err := p.Exists(id); err != nil {
 		return false, err
 	} else if !ok {
