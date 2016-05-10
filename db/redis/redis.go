@@ -1,23 +1,24 @@
 package redis
 
 import (
-	. "github.com/eynstudio/gobreak"
 	"time"
+
+	. "github.com/eynstudio/gobreak"
 
 	"github.com/eynstudio/gobreak/log/datelog"
 	"github.com/garyburd/redigo/redis"
 )
 
-var _redis Redis
+var Default Redis
 
-func Init(host, pwd string) { _redis.Init(host, pwd) }
+func Init(host, pwd string) { Default.Init(host, pwd) }
 func Do(cmd string, args ...interface{}) (reply interface{}, err error) {
-	return _redis.do(cmd, args...)
+	return Default.do(cmd, args...)
 }
 
-var Log = _redis.log.Log
-var Logf = _redis.log.Logf
-var Logln = _redis.log.Logln
+var Log = Default.log.Log
+var Logf = Default.log.Logf
+var Logln = Default.log.Logln
 
 var Int = redis.Int
 var Int64 = redis.Int64
@@ -72,9 +73,10 @@ func (p *Redis) do(cmd string, args ...interface{}) (reply interface{}, err erro
 	return rc.Do(cmd, args...)
 }
 
-func (p *Redis) Do(cmd string, args ...interface{}) (c Cmd) {
+func (p *Redis) Do(cmd string, args ...interface{}) (c *Cmd) {
 	rc := p.pool.Get()
 	defer rc.Close()
+	c = new(Cmd)
 	c.reply, c.Err = rc.Do(cmd, args...)
 	return
 }
@@ -93,3 +95,26 @@ func (p *Cmd) Int() (i int) {
 	i, p.Err = redis.Int(p.reply, p.Err)
 	return
 }
+
+func (p *Cmd) String() (s string) {
+	s, p.Err = redis.String(p.reply, p.Err)
+	return
+}
+
+func (p *Cmd) Values() (t []interface{}) {
+	t, p.Err = redis.Values(p.reply, p.Err)
+	return
+}
+
+func (p *Cmd) As(m T) *Cmd {
+	if vals := p.Values(); p.NotErr() {
+		if len(vals) == 0 {
+			p.Err = redis.ErrNil
+			return p
+		}
+		p.Err = redis.ScanStruct(vals, m)
+	}
+	return p
+}
+
+func (p Cmd) IsNotFound() bool { return p.IsErr() && p.Err == redis.ErrNil }

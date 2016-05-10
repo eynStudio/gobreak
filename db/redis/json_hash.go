@@ -26,7 +26,7 @@ func (p *JsonHash) Get(id, t T) (has bool, err error) {
 }
 
 func (p *JsonHash) Vals(t T) error {
-	if data, err := redis.ByteSlices(_redis.do("HVALS", p.Name)); err != nil {
+	if data, err := redis.ByteSlices(Default.do("HVALS", p.Name)); err != nil {
 		return err
 	} else {
 		resultv := reflect.ValueOf(t)
