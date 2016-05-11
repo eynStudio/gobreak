@@ -3,9 +3,12 @@ package orm
 import (
 	"database/sql"
 	"log"
+
+	. "github.com/eynstudio/gobreak"
 )
 
 type TxScope struct {
+	Error
 	*sql.Tx
 }
 

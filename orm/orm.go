@@ -26,8 +26,6 @@ func Open(driver, source string) (*Orm, error) {
 	if err == nil {
 		err = orm.db.Ping()
 	}
-
-	//	orm.test()
 	return orm, err
 }
 
@@ -43,109 +41,83 @@ func (p *Orm) LoadMeta() *meta.MetaDb { return p.dialect.LoadMeta(p.db) }
 func (p *Orm) Where(sql string, args ...interface{}) *Scope {
 	return NewScope(p).Where(sql, args...)
 }
-func (p *Orm) WhereId(id interface{}) *Scope {
-	return NewScope(p).WhereId(id)
-}
-func (p *Orm) Has(data T) bool {
-	return NewScope(p).Has(data)
-}
-func (p *Orm) HasId(data T, id interface{}) bool {
-	return NewScope(p).WhereId(id).Count(data) > 0
-}
-func (p *Orm) Count(data T) int {
-	return NewScope(p).Count(data)
+func (p *Orm) WhereId(id interface{}) *Scope { return NewScope(p).WhereId(id) }
+
+func (p *Orm) Has(data T) (bool, error) {
+	s := NewScope(p)
+	b := s.Has(data)
+	return b, s.Err
 }
 
-func (p *Orm) All(data T) T {
-	NewScope(p).All(data)
-	return data
-}
-func (p *Orm) Query(data T, query string, args ...interface{}) T {
-	NewScope(p).Query(data, query, args...)
-	return data
-}
-func (p *Orm) Page(model T, pf *filter.PageFilter) *db.Paging {
-	return NewScope(p).Page(model, pf)
-}
-func (p *Orm) One(data T) T {
-	NewScope(p).One(data)
-	return data
+func (p *Orm) HasId(data T, id interface{}) (bool, error) {
+	s := NewScope(p)
+	c := s.WhereId(id).Count(data)
+	return c > 0, s.Err
 }
 
-func (p *Orm) Insert(data T) *Orm {
-	NewScope(p).Insert(data)
-	return p
+func (p *Orm) Count(data T) (int, error) {
+	s := NewScope(p)
+	c := s.Count(data)
+	return c, s.Err
 }
 
-func (p *Orm) Update(data T) *Orm {
-	NewScope(p).Update(data)
-	return p
+func (p *Orm) All(data T) error { return NewScope(p).All(data).Err }
+
+func (p *Orm) Query(data T, query string, args ...interface{}) error {
+	return NewScope(p).Query(data, query, args...).Err
 }
 
-func (p *Orm) UpdateFields(data T, fields []string) *Orm {
-	NewScope(p).UpdateFields(data, fields)
-	return p
+func (p *Orm) Page(model T, pf *filter.PageFilter) (*db.Paging, error) {
+	s := NewScope(p)
+	pp := s.Page(model, pf)
+	return pp, s.Err
 }
 
-func (p *Orm) Save(data T) *Orm {
-	NewScope(p).Save(data)
-	return p
+func (p *Orm) One(data T) error    { return NewScope(p).One(data).Err }
+func (p *Orm) Insert(data T) error { return NewScope(p).Insert(data).Err }
+func (p *Orm) Update(data T) error { return NewScope(p).Update(data).Err }
+func (p *Orm) Save(data T) error   { return NewScope(p).Save(data).Err }
+
+func (p *Orm) UpdateFields(data T, fields []string) error {
+	return NewScope(p).UpdateFields(data, fields).Err
 }
-func (p *Orm) SaveAs(dest T, src ...T) *Orm {
+
+//!! this must use Tx !!
+func (p *Orm) SaveAs(dest T, src ...T) error {
 	s := NewScope(p)
 	for _, m := range src {
-		s.Save(Map(dest, m))
+		s.NoErrExec(func() {
+			s.Save(Map(dest, m))
+		})
 	}
-	return p
+	return s.Err
 }
 
-func (p *Orm) Del(data T) *Orm {
-	NewScope(p).Del(data)
-	return p
-}
-func (p *Orm) DelAll(data T) *Orm {
-	NewScope(p).DelAll(data)
-	return p
-}
-func (p *Orm) DelId(data T, id interface{}) *Orm {
-	NewScope(p).WhereId(id).Del(data)
-	return p
-}
+func (p *Orm) Del(data T) error                   { return NewScope(p).Del(data).Err }
+func (p *Orm) DelAll(data T) error                { return NewScope(p).DelAll(data).Err }
+func (p *Orm) DelId(data T, id interface{}) error { return NewScope(p).WhereId(id).Del(data).Err }
 
-func (p *Orm) Begin() (ts *TxScope, err error) {
+func (p *Orm) Begin() (ts *TxScope) {
 	ts = &TxScope{}
-	ts.Tx, err = p.db.Begin()
+	ts.Tx, ts.Err = p.db.Begin()
 	return
 }
 
-func (p *Orm) RawCount(query string, args ...interface{}) (count int64) {
-	if err := p.db.QueryRow(query, args...).Scan(&count); err != nil {
-		return 0
-	}
+func (p *Orm) RawCount(query string, args ...interface{}) (count int64, err error) {
+	err = p.db.QueryRow(query, args...).Scan(&count)
 	return
 }
+
 func (p *Orm) Transact(txFunc func(*TxScope)) (err error) {
-	tx, err := p.Begin()
-	if err != nil {
-		return
+	tx := p.Begin()
+	if tx.IsErr() {
+		return tx.Err
 	}
 
 	defer func() {
 		err = tx.Commit()
-		//		if p := recover(); p != nil {
-		//			switch p := p.(type) {
-		//			case error:
-		//				err = p
-		//			default:
-		//				err = fmt.Errorf("%s", p)
-		//			}
-		//		}
-		//		if err != nil {
-		//			tx.Rollback()
-		//			return
-		//		}
-		//		err = tx.Commit()
 	}()
+
 	txFunc(tx)
 	return
 }

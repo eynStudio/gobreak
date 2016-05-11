@@ -1,8 +1,12 @@
 package db
 
 import (
+	"errors"
+
 	. "github.com/eynstudio/gobreak"
 )
+
+var DbNotFound = errors.New("Db Not Found")
 
 type SqlArgs struct {
 	Sql  string
