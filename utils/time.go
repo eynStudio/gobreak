@@ -11,6 +11,11 @@ func Today() time.Time {
 	return time.Date(n.Year(), n.Month(), n.Day(), 0, 0, 0, 0, time.UTC)
 }
 
+func IsSameDate(t1, t2 time.Time) bool {
+	y1, m1, d1 := t1.Date()
+	y2, m2, d2 := t2.Date()
+	return d1 == d2 && m1 == m2 && y1 == y2
+}
 func FmtYyyyMmDd(t time.Time) string {
 	return t.Format("2006年01月02日")
 }

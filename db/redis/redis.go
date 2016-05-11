@@ -117,4 +117,5 @@ func (p *Cmd) As(m T) *Cmd {
 	return p
 }
 
-func (p Cmd) IsNotFound() bool { return p.IsErr() && p.Err == redis.ErrNil }
+func (p Cmd) IsNotFound() bool { return p.Error.IsErr() && p.Err == redis.ErrNil }
+func (p Cmd) IsErr() bool      { return p.Error.IsErr() && p.Err != redis.ErrNil }
