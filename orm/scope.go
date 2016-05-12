@@ -51,6 +51,7 @@ func (p *Scope) Count(model T) int {
 	row.Scan(&count)
 	return count
 }
+
 func (p *Scope) Has(model T) bool {
 	p.checkModel(model)
 	id := p.model.Id()
@@ -65,6 +66,7 @@ func (p *Scope) Has(model T) bool {
 	}
 	return count > 0
 }
+
 func (p *Scope) One(model T) *Scope {
 	p.checkModel(model)
 	sa := p.orm.dialect.BulidTopNSql(p, 1)
@@ -274,28 +276,12 @@ func (p *Scope) setWhereIdIfNoWhere(model T) {
 	}
 }
 
-func (p *Scope) exec(sa db.SqlArgs) {
-
-	params := convertArgs(sa)
-	if p.hasTx() {
-		_, p.Err = p.Tx.Exec(sa.Sql, params...)
-
-	} else {
-		_, p.Err = p.orm.db.Exec(sa.Sql, params...)
-	}
-	fmt.Println(sa.Sql, sa.Args)
-
-	p.LogErr()
-}
-
 func convertArgs(sa db.SqlArgs) []interface{} {
 	params := []interface{}{}
 	for _, arg := range sa.Args {
 		switch a := arg.(type) {
 		case GUID:
 			params = append(params, string(a))
-			//		case time.Time:
-			//			params = append(params, a.Format(timeFormate))
 		default:
 			params = append(params, a)
 		}
@@ -317,6 +303,16 @@ func (p *Scope) _queryRow(query string, args ...interface{}) *sql.Row {
 		return p.Tx.QueryRow(query, args...)
 	}
 	return p.orm.db.QueryRow(query, args...)
+}
+
+func (p *Scope) exec(sa db.SqlArgs) {
+	params := convertArgs(sa)
+	if p.hasTx() {
+		_, p.Err = p.Tx.Exec(sa.Sql, params...)
+
+	} else {
+		_, p.Err = p.orm.db.Exec(sa.Sql, params...)
+	}
 }
 
 func (p Scope) hasTx() bool { return p.Tx != nil }
