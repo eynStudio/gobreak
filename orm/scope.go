@@ -3,7 +3,6 @@ package orm
 import (
 	"database/sql"
 	"fmt"
-	"log"
 	"strings"
 
 	. "github.com/eynstudio/gobreak"
@@ -69,12 +68,8 @@ func (p *Scope) Has(model T) bool {
 func (p *Scope) One(model T) *Scope {
 	p.checkModel(model)
 	sa := p.orm.dialect.BulidTopNSql(p, 1)
-	log.Println(sa.Sql)
 	var rows *sql.Rows
 	if rows, p.Err = p._query(sa.Sql, convertArgs(sa)...); p.IsErr() {
-		if p.orm.dialect.Driver() == "mssql" && strings.Contains(p.Err.Error(), "Query was empty") {
-			p.Err = db.DbNotFound
-		}
 		p.LogErr()
 		return p
 	}

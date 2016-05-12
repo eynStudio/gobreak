@@ -2,7 +2,6 @@ package orm
 
 import (
 	"database/sql"
-	"log"
 	"reflect"
 	"time"
 
@@ -93,13 +92,10 @@ func (p *model) GetValuesForSqlRowScan(cols []string) []interface{} {
 			} else if field.Field.Kind() == reflect.String {
 				values[index] = reflect.New(reflect.PtrTo(reflect.TypeOf(""))).Interface()
 			} else if field.Field.Kind() == reflect.Struct {
-				log.Println("reflect.Struct")
 				switch field.Field.Type().String() {
 				case "time.Time":
-					log.Println("time.Time")
 					values[index] = reflect.New(reflect.PtrTo(reflect.TypeOf(""))).Interface()
 				default:
-					log.Println("not time.Time")
 					values[index] = reflect.New(reflect.PtrTo(field.Field.Type())).Interface()
 				}
 			} else {
@@ -125,16 +121,12 @@ func (p *model) MapObjFromRowValues(cols []string, values []interface{}) reflect
 					obj.FieldByName(column).SetString(v.Interface().(string))
 				}
 			} else if field.Field.Kind() == reflect.Struct {
-				log.Println("reflect.Struct")
 				switch field.Field.Type().String() {
 				case "time.Time":
-					log.Println("time.Time")
 					v := reflect.ValueOf(value).Elem().Elem()
-					loginTime, _ := time.ParseInLocation(timeFormate, v.Interface().(string), time.Local)
-					log.Println(v, loginTime)
-					obj.FieldByName(column).Set(reflect.ValueOf(loginTime))
+					t, _ := time.Parse(timeFormate, v.Interface().(string))
+					obj.FieldByName(column).Set(reflect.ValueOf(t))
 				}
-
 			} else if v := reflect.ValueOf(value).Elem().Elem(); v.IsValid() {
 				obj.FieldByName(column).Set(v)
 			}
