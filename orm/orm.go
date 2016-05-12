@@ -98,7 +98,7 @@ func (p *Orm) DelAll(data T) error                { return NewScope(p).DelAll(da
 func (p *Orm) DelId(data T, id interface{}) error { return NewScope(p).WhereId(id).Del(data).Err }
 
 func (p *Orm) Begin() (ts *TxScope) {
-	ts = &TxScope{}
+	ts = NewTxScope(p)
 	ts.Tx, ts.Err = p.db.Begin()
 	return
 }

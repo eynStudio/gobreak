@@ -3,14 +3,15 @@ package orm
 import (
 	"database/sql"
 	"log"
-
-	. "github.com/eynstudio/gobreak"
 )
 
 type TxScope struct {
-	Error
-	*sql.Tx
+	*Scope
 }
+
+func NewTxScope(orm *Orm) *TxScope { return &TxScope{Scope: NewScope(orm)} }
+
+func (p *TxScope) NewScope() *Scope { return &Scope{orm: p.orm, Tx: p.Tx} }
 
 func (p *TxScope) Exec(query string, args ...interface{}) int64 {
 	if r, err := p.Tx.Exec(query, args...); err != nil {

@@ -23,11 +23,10 @@ type Scope struct {
 	offset    int
 	limit     int
 	hasLimit  bool
+	*sql.Tx
 }
 
-func NewScope(orm *Orm) *Scope {
-	return &Scope{orm: orm}
-}
+func NewScope(orm *Orm) *Scope { return &Scope{orm: orm} }
 
 func (p *Scope) Where(sql string, args ...interface{}) *Scope {
 	p.haswhere = true
@@ -47,7 +46,7 @@ func (p *Scope) Count(model T) int {
 	id := p.model.Id()
 	w := p.buildWhere()
 	sql := fmt.Sprintf("SELECT COUNT(%v) from %s %v", p.quote(id), p.quote(p.model.Name), w.Sql)
-	row := p.orm.db.QueryRow(sql, convertArgs(w)...)
+	row := p._queryRow(sql, convertArgs(w)...)
 	count := 0
 	row.Scan(&count)
 	return count
@@ -58,7 +57,7 @@ func (p *Scope) Has(model T) bool {
 	var sa db.SqlArgs
 	sa.AddArgs(p.model.IdVal(model))
 	sa.Sql = fmt.Sprintf("SELECT COUNT(%v) from %s WHERE %v=?", p.quote(id), p.quote(p.model.Name), id)
-	row := p.orm.db.QueryRow(sa.Sql, convertArgs(sa)...)
+	row := p._queryRow(sa.Sql, convertArgs(sa)...)
 	count := 0
 	if err := row.Scan(&count); err != nil {
 		fmt.Println("Has:", sa.Sql)
@@ -70,7 +69,7 @@ func (p *Scope) One(model T) *Scope {
 	p.checkModel(model)
 	sa := p.orm.dialect.BulidTopNSql(p, 1)
 	var rows *sql.Rows
-	if rows, p.Err = p.orm.db.Query(sa.Sql, convertArgs(sa)...); p.NotErr() {
+	if rows, p.Err = p._query(sa.Sql, convertArgs(sa)...); p.NotErr() {
 		p.model.MapRowsAsObj(rows, model)
 	}
 
@@ -83,7 +82,7 @@ func (p *Scope) All(model T) *Scope {
 	w := p.buildWhere()
 	sql_ := fmt.Sprintf("SELECT * from %s %v", p.quote(p.model.Name), w.Sql)
 	var rows *sql.Rows
-	if rows, p.Err = p.orm.db.Query(sql_, convertArgs(w)...); p.NotErr() {
+	if rows, p.Err = p._query(sql_, convertArgs(w)...); p.NotErr() {
 		p.model.MapRowsAsLst(rows, model)
 	}
 	return p
@@ -92,7 +91,7 @@ func (p *Scope) All(model T) *Scope {
 func (p *Scope) Query(model T, query string, args ...interface{}) *Scope {
 	p.checkModel(model)
 	var rows *sql.Rows
-	if rows, p.Err = p.orm.db.Query(query, args...); p.NotErr() {
+	if rows, p.Err = p._query(query, args...); p.NotErr() {
 		p.model.MapRowsAsLst(rows, model)
 	}
 	return p
@@ -114,7 +113,7 @@ func (p *Scope) Page(model T, pf *filter.PageFilter) *db.Paging {
 	sql_ := fmt.Sprintf("SELECT * from %s %v %v", p.quote(p.model.Name), w.Sql, psa.Sql)
 	var rows *sql.Rows
 	paging := &db.Paging{}
-	if rows, p.Err = p.orm.db.Query(sql_, convertArgs(w)...); p.NotErr() {
+	if rows, p.Err = p._query(sql_, convertArgs(w)...); p.NotErr() {
 		p.model.MapRowsAsLst(rows, model)
 		paging.Total = p.Count(model)
 		paging.Items = model
@@ -276,8 +275,14 @@ func (p *Scope) setWhereIdIfNoWhere(model T) {
 }
 
 func (p *Scope) exec(sa db.SqlArgs) {
+
 	params := convertArgs(sa)
-	_, p.Err = p.orm.db.Exec(sa.Sql, params...)
+	if p.hasTx() {
+		_, p.Err = p.Tx.Exec(sa.Sql, params...)
+
+	} else {
+		_, p.Err = p.orm.db.Exec(sa.Sql, params...)
+	}
 	fmt.Println(sa.Sql, sa.Args)
 	if p.IsErr() {
 		if p.orm.dialect.Driver() == "mssql" && strings.Contains(p.Err.Error(), "Query was empty") {
@@ -301,3 +306,19 @@ func convertArgs(sa db.SqlArgs) []interface{} {
 }
 
 func (p Scope) IsNotFound() bool { return p.IsErr() && p.Err == db.DbNotFound }
+
+func (p *Scope) _query(query string, args ...interface{}) (*sql.Rows, error) {
+	if p.hasTx() {
+		return p.Tx.Query(query, args...)
+	}
+	return p.orm.db.Query(query, args...)
+}
+
+func (p *Scope) _queryRow(query string, args ...interface{}) *sql.Row {
+	if p.hasTx() {
+		return p.Tx.QueryRow(query, args...)
+	}
+	return p.orm.db.QueryRow(query, args...)
+}
+
+func (p Scope) hasTx() bool { return p.Tx != nil }
