@@ -3,6 +3,7 @@ package orm
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"strings"
 
 	. "github.com/eynstudio/gobreak"
@@ -68,12 +69,16 @@ func (p *Scope) Has(model T) bool {
 func (p *Scope) One(model T) *Scope {
 	p.checkModel(model)
 	sa := p.orm.dialect.BulidTopNSql(p, 1)
+	log.Println(sa.Sql)
 	var rows *sql.Rows
-	if rows, p.Err = p._query(sa.Sql, convertArgs(sa)...); p.NotErr() {
-		p.model.MapRowsAsObj(rows, model)
+	if rows, p.Err = p._query(sa.Sql, convertArgs(sa)...); p.IsErr() {
+		if p.orm.dialect.Driver() == "mssql" && strings.Contains(p.Err.Error(), "Query was empty") {
+			p.Err = db.DbNotFound
+		}
+		p.LogErr()
+		return p
 	}
-
-	p.LogErr()
+	p.model.MapRowsAsObj(rows, model)
 	return p
 }
 
@@ -284,11 +289,7 @@ func (p *Scope) exec(sa db.SqlArgs) {
 		_, p.Err = p.orm.db.Exec(sa.Sql, params...)
 	}
 	fmt.Println(sa.Sql, sa.Args)
-	if p.IsErr() {
-		if p.orm.dialect.Driver() == "mssql" && strings.Contains(p.Err.Error(), "Query was empty") {
-			p.Err = db.DbNotFound
-		}
-	}
+
 	p.LogErr()
 }
 
@@ -298,6 +299,8 @@ func convertArgs(sa db.SqlArgs) []interface{} {
 		switch a := arg.(type) {
 		case GUID:
 			params = append(params, string(a))
+			//		case time.Time:
+			//			params = append(params, a.Format(timeFormate))
 		default:
 			params = append(params, a)
 		}

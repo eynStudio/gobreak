@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"log"
 	"strconv"
 	"time"
 )
@@ -14,6 +15,7 @@ func Today() time.Time {
 func IsSameDate(t1, t2 time.Time) bool {
 	y1, m1, d1 := t1.Date()
 	y2, m2, d2 := t2.Date()
+	log.Println(t1, t2)
 	return d1 == d2 && m1 == m2 && y1 == y2
 }
 func FmtYyyyMmDd(t time.Time) string {

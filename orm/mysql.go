@@ -3,6 +3,7 @@ package orm
 import (
 	"database/sql"
 	"fmt"
+	"github.com/eynstudio/gobreak/db"
 	"github.com/eynstudio/gobreak/db/meta"
 	"log"
 	"strings"
@@ -16,6 +17,12 @@ func (p *mysql) Driver() string { return "mysql" }
 
 func (mysql) Quote(key string) string {
 	return fmt.Sprintf("`%s`", key)
+}
+
+func (p *mysql) BulidTopNSql(s *Scope, n int) (sa db.SqlArgs) {
+	sa = s.buildWhere()
+	sa.Sql = fmt.Sprintf("SELECT * from %s %v LIMIT %d", p.Quote(s.model.Name), sa.Sql, n)
+	return
 }
 
 func (p *mysql) LoadMeta(db *sql.DB) *meta.MetaDb {
