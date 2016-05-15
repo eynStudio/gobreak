@@ -23,6 +23,11 @@ func (p *Cmd) Int() (i int) {
 	return
 }
 
+func (p *Cmd) Bool() (b bool) {
+	b, p.Err = redis.Bool(p.reply, p.Err)
+	return
+}
+
 func (p *Cmd) String() (s string) {
 	s, p.Err = redis.String(p.reply, p.Err)
 	return
