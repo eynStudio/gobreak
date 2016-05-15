@@ -27,18 +27,3 @@ func (p *Hash) Del(id T) (err error) {
 	_, err = Default.do("HDEL", p.Name, id)
 	return
 }
-
-func (p *Redis) Hget(k string, f T) *Cmd        { return p.Do("HGET", k, f) }
-func (p *Redis) Hset(k string, f, v T) *Cmd     { return p.Do("HSET", k, f, v) }
-func (p *Redis) Hmget(k string, args ...T) *Cmd { return p.Do("HMGET", buildArgs(k, args)...) }
-func (p *Redis) Hmset(k string, args ...T) *Cmd { return p.Do("HMSET", buildArgs(k, args)...) }
-func (p *Redis) Hgetall(k string) *Cmd          { return p.Do("HGETALL", k) }
-func (p *Redis) Hvals(k string) *Cmd            { return p.Do("HVALS", k) }
-
-func buildArgs(k T, args ...T) (a redis.Args) {
-	a = a.Add(k)
-	for _, it := range args {
-		a = a.AddFlat(it)
-	}
-	return
-}
