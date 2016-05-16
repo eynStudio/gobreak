@@ -6,7 +6,7 @@ import (
 )
 
 func (p *Redis) Zadd(k string, args ...T) (int, error) {
-	return redis.Int(p.Do("ZADD", buildArgs(k, args)...))
+	return redis.Int(p.Do("ZADD", Args(k, args)...))
 }
 func Zadd(k string, args ...T) (int, error) { return Default.Zadd(k, args...) }
 
@@ -32,3 +32,6 @@ func (p *Redis) ZincrbyF(k string, inc, m T) (float64, error) {
 	return redis.Float64(p.Zincrby(k, inc, m))
 }
 func ZincrbyF(k string, inc, m T) (float64, error) { return Default.ZincrbyF(k, inc, m) }
+
+func (p *Redis) Zrem(k string, m ...T) (int, error) { return redis.Int(p.Do("ZREM", Args(k, m)...)) }
+func Zrem(k string, m ...T) (int, error)            { return Default.Zrem(k, m...) }

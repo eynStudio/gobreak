@@ -6,7 +6,7 @@ import (
 )
 
 func (p *Redis) Sadd(k string, m ...T) (int, error) {
-	return redis.Int(p.Do("SADD", buildArgs(k, m)...))
+	return redis.Int(p.Do("SADD", Args(k, m)...))
 }
 func Sadd(k string, m ...T) (int, error) { return Default.Sadd(k, m...) }
 
@@ -21,7 +21,7 @@ func (p *Redis) Sdiff(k ...interface{}) ([]interface{}, error) {
 func Sdiff(k ...interface{}) ([]interface{}, error) { return Default.Sdiff(k...) }
 
 func (p *Redis) SdiffStore(dest string, k ...interface{}) (int, error) {
-	return redis.Int(p.Do("SDIFFSTORE", buildArgs(dest, k)))
+	return redis.Int(p.Do("SDIFFSTORE", Args(dest, k)))
 }
 func SdiffStore(dest string, k ...interface{}) (int, error) { return Default.SdiffStore(dest, k...) }
 
@@ -32,7 +32,7 @@ func (p *Redis) Sinter(k ...interface{}) ([]interface{}, error) {
 func Sinter(k ...interface{}) ([]interface{}, error) { return Default.Sinter(k...) }
 
 func (p *Redis) SinterStore(dest string, k ...interface{}) (int, error) {
-	return redis.Int(p.Do("SINTERSTORE", buildArgs(dest, k)))
+	return redis.Int(p.Do("SINTERSTORE", Args(dest, k)))
 }
 func SinterStore(dest string, k ...interface{}) (int, error) { return Default.SinterStore(dest, k...) }
 
@@ -46,16 +46,16 @@ func (p *Redis) Smove(s, d string, m T) (bool, error) { return redis.Bool(p.Do("
 func Smove(s, d string, m T) (bool, error)            { return Default.Smove(s, d, m) }
 
 func (p *Redis) Srem(k string, m ...T) (int, error) {
-	return redis.Int(p.Do("SREM", buildArgs(k, m)...))
+	return redis.Int(p.Do("SREM", Args(k, m)...))
 }
 func Srem(k string, m ...T) (int, error) { return Default.Srem(k, m...) }
 
 func (p *Redis) Sunion(k ...string) ([]interface{}, error) {
-	return redis.Values(p.Do("SUNION", buildArgs(k)...))
+	return redis.Values(p.Do("SUNION", Args(k)...))
 }
 func Sunion(k ...string) ([]interface{}, error) { return Default.Sunion(k...) }
 
 func (p *Redis) SunionStore(dest string, k ...string) (int, error) {
-	return redis.Int(p.Do("SUNIONSTORE", buildArgs(dest, k)...))
+	return redis.Int(p.Do("SUNIONSTORE", Args(dest, k)...))
 }
 func SunionStore(dest string, k ...string) (int, error) { return Default.SunionStore(dest, k...) }

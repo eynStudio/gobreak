@@ -71,10 +71,12 @@ func (p *Redis) Do(cmd string, args ...interface{}) (reply interface{}, err erro
 	return rc.Do(cmd, args...)
 }
 
-func buildArgs(k T, args ...T) (a redis.Args) {
+func Args(k T, args ...T) (a redis.Args) {
 	a = a.Add(k)
 	for _, it := range args {
 		a = a.AddFlat(it)
 	}
 	return
 }
+
+func IsNilErr(err error) bool { return err == redis.ErrNil }
