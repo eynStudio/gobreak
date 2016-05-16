@@ -33,5 +33,12 @@ func (p *Redis) ZincrbyF(k string, inc, m T) (float64, error) {
 }
 func ZincrbyF(k string, inc, m T) (float64, error) { return Default.ZincrbyF(k, inc, m) }
 
+func (p *Redis) Zinterstore(d string, n int, keys []string, agg string, w []float64) (int, error) {
+	return redis.Int(p.Do("ZINTERSTORE", Args(d, n, keys, agg, w)...))
+}
+func Zinterstore(d string, n int, keys []string, agg string, w []float64) (int, error) {
+	return Default.Zadd(d, n, keys, agg, w)
+}
+
 func (p *Redis) Zrem(k string, m ...T) (int, error) { return redis.Int(p.Do("ZREM", Args(k, m)...)) }
 func Zrem(k string, m ...T) (int, error)            { return Default.Zrem(k, m...) }
