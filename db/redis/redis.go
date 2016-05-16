@@ -1,17 +1,17 @@
 package redis
 
 import (
-	"time"
-
+	. "github.com/eynstudio/gobreak"
 	"github.com/eynstudio/gobreak/log/datelog"
 	"github.com/garyburd/redigo/redis"
+	"time"
 )
 
 var Default Redis
 
 func Init(host, pwd string) { Default.Init(host, pwd) }
 func Do(cmd string, args ...interface{}) (reply interface{}, err error) {
-	return Default.do(cmd, args...)
+	return Default.Do(cmd, args...)
 }
 
 var Log = Default.log.Log
@@ -65,16 +65,16 @@ func (p *Redis) Init(server, pwd string) {
 	p.pool = newPool(server, pwd)
 }
 
-func (p *Redis) do(cmd string, args ...interface{}) (reply interface{}, err error) {
+func (p *Redis) Do(cmd string, args ...interface{}) (reply interface{}, err error) {
 	rc := p.pool.Get()
 	defer rc.Close()
 	return rc.Do(cmd, args...)
 }
 
-func (p *Redis) Do(cmd string, args ...interface{}) (c *Cmd) {
-	rc := p.pool.Get()
-	defer rc.Close()
-	c = new(Cmd)
-	c.reply, c.Err = rc.Do(cmd, args...)
+func buildArgs(k T, args ...T) (a redis.Args) {
+	a = a.Add(k)
+	for _, it := range args {
+		a = a.AddFlat(it)
+	}
 	return
 }
