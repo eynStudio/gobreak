@@ -40,7 +40,7 @@ func (p *Redis) Sismember(k string, m T) (bool, error) { return redis.Bool(p.Do(
 func Sismember(k string, m T) (bool, error)            { return Default.Sismember(k, m) }
 
 func (p *Redis) Smembers(k string) ([]interface{}, error) { return redis.Values(p.Do("SMEMBERS", k)) }
-func Smembers(k string, m T) ([]interface{}, error)       { return Default.Smembers(k) }
+func Smembers(k string) ([]interface{}, error)            { return Default.Smembers(k) }
 
 func (p *Redis) Smove(s, d string, m T) (bool, error) { return redis.Bool(p.Do("SMOVE", s, d, m)) }
 func Smove(s, d string, m T) (bool, error)            { return Default.Smove(s, d, m) }
