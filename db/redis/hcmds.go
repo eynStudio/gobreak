@@ -2,6 +2,7 @@ package redis
 
 import (
 	"encoding/json"
+
 	. "github.com/eynstudio/gobreak"
 	"github.com/garyburd/redigo/redis"
 )
