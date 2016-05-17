@@ -11,7 +11,7 @@ func (p *Redis) Sadd(k string, m ...T) (int, error) {
 func Sadd(k string, m ...T) (int, error) { return Default.Sadd(k, m...) }
 
 //返回集合存储的key的基数 (集合元素的数量)
-func (p *Redis) Scard(k string) (int, error) { return redis.Int(p.Do("SCARD")) }
+func (p *Redis) Scard(k string) (int, error) { return redis.Int(p.Do("SCARD", k)) }
 func Scard(k string) (int, error)            { return Default.Scard(k) }
 
 //返回一个集合与给定集合的差集的元素.
@@ -44,6 +44,25 @@ func Smembers(k string) ([]interface{}, error)            { return Default.Smemb
 
 func (p *Redis) Smove(s, d string, m T) (bool, error) { return redis.Bool(p.Do("SMOVE", s, d, m)) }
 func Smove(s, d string, m T) (bool, error)            { return Default.Smove(s, d, m) }
+
+func (p *Redis) Spop(k string) (interface{}, error) { return p.Do("SPOP", k) }
+func Spop(k string) (interface{}, error)            { return Default.Spop(k) }
+
+func (p *Redis) SpopCount(k string, c int) ([]interface{}, error) {
+	return redis.Values(p.Do("SPOP", k, c))
+}
+func SpopCount(k string, c int) ([]interface{}, error) { return Default.SpopCount(k, c) }
+
+func (p *Redis) SrandMember(k string) (interface{}, error) { return p.Do("SRANDMEMBER", k) }
+func SrandMember(k string) (interface{}, error)            { return Default.SrandMember(k) }
+
+func (p *Redis) SrandMemberStr(k string) (string, error) { return redis.String(p.Do("SRANDMEMBER", k)) }
+func SrandMemberStr(k string) (string, error)            { return Default.SrandMemberStr(k) }
+
+func (p *Redis) SrandMemberCount(k string, c int) ([]interface{}, error) {
+	return redis.Values(p.Do("SRANDMEMBER", k, c))
+}
+func SrandMemberCount(k string, c int) ([]interface{}, error) { return Default.SrandMemberCount(k, c) }
 
 func (p *Redis) Srem(k string, m ...T) (int, error) {
 	return redis.Int(p.Do("SREM", Args(k, m)...))
