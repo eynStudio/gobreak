@@ -99,6 +99,24 @@ func Zrank(k string, m T) (int, error)            { return Default.Zrank(k, m) }
 func (p *Redis) Zrem(k string, m ...T) (int, error) { return redis.Int(p.Do("ZREM", Args(k, m)...)) }
 func Zrem(k string, m ...T) (int, error)            { return Default.Zrem(k, m...) }
 
+func (p *Redis) zremRange(cmd, k string, min, max T) (int, error) {
+	return redis.Int(p.Do(cmd, k, min, max))
+}
+func (p *Redis) ZremRangeByLex(k string, min, max T) (int, error) {
+	return p.zremRange("ZREMRANGEBYLEX", k, min, max)
+}
+func ZremRangeByLex(k string, min, max T) (int, error) { return Default.ZremRangeByLex(k, min, max) }
+
+func (p *Redis) ZremRangeByRank(k string, min, max T) (int, error) {
+	return p.zremRange("ZREMRANGEBYRANK", k, min, max)
+}
+func ZremRangeByRank(k string, min, max T) (int, error) { return Default.ZremRangeByRank(k, min, max) }
+
+func (p *Redis) ZremRangeByScore(k string, min, max T) (int, error) {
+	return p.zremRange("ZREMRANGEBYSCORE", k, min, max)
+}
+func ZremRangeByScore(k string, min, max T) (int, error) { return Default.ZremRangeByScore(k, min, max) }
+
 func (p *Redis) ZrevRange(k string, f, t int) ([]interface{}, error) {
 	return redis.Values(p.Do("ZREVRANGE", k, f, t))
 }
