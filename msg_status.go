@@ -1,18 +1,20 @@
 package gobreak
 
-var OkStatus MsgStatus = MsgStatus{Status: "ok"}
+var OkStatus Status = Status{Code: 0, Msg: "OK"}
 
-type MsgStatus struct {
-	Msg    string
-	Status string
+type Status struct {
+	Code int
+	Msg  string
 }
 
-func (p *MsgStatus) ErrMsg(msg string) *MsgStatus { return p.SetMsg("err", msg) }
-func (p *MsgStatus) OkMsg(msg string) *MsgStatus  { return p.SetMsg("ok", msg) }
-func (p *MsgStatus) Ok() *MsgStatus               { return p.SetMsg("ok", "") }
+func (p *Status) ErrMsg(msg string) *Status { return p.SetStatus(-1, msg) }
+func (p *Status) OkMsg(msg string) *Status  { return p.SetStatus(0, msg) }
+func (p *Status) Ok() *Status               { return p.SetStatus(0, "OK") }
+func (p *Status) IsOk() bool                { return p.Code == 0 }
+func (p *Status) IsErr() bool               { return p.Code != 0 }
 
-func (p *MsgStatus) SetMsg(status, msg string) *MsgStatus {
-	p.Status = status
+func (p *Status) SetStatus(code int, msg string) *Status {
+	p.Code = code
 	p.Msg = msg
 	return p
 }

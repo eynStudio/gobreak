@@ -33,7 +33,7 @@ func (p *Error) SetErrIf(yes bool, msg string) {
 	}
 }
 
-func (p Error) GetMsgStatus() (m MsgStatus) {
+func (p Error) GetStatus() (m Status) {
 	if p.IsErr() {
 		m.ErrMsg(p.msg)
 	} else {
