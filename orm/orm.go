@@ -73,6 +73,12 @@ func (p *Orm) Page(model T, pf *filter.PageFilter) (*db.Paging, error) {
 	return pp, s.Err
 }
 
+func (p *Orm) PageByOrder(model T, order string, pf *filter.PageFilter) (*db.Paging, error) {
+	s := NewScope(p)
+	pp := s.PageByOrder(model, order, pf)
+	return pp, s.Err
+}
+
 func (p *Orm) One(data T) error    { return NewScope(p).One(data).Err }
 func (p *Orm) Insert(data T) error { return NewScope(p).Insert(data).Err }
 func (p *Orm) Update(data T) error { return NewScope(p).Update(data).Err }

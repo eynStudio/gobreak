@@ -122,6 +122,25 @@ func (p *Scope) Page(model T, pf *filter.PageFilter) *db.Paging {
 	}
 	return paging
 }
+
+func (p *Scope) PageByOrder(model T, order string, pf *filter.PageFilter) *db.Paging {
+	p.checkModel(model)
+	p.pf = pf
+	p.haswhere = true
+	p.Limit(pf.Skip(), pf.PerPage())
+	w := p.buildWhere()
+	psa := p.buildPageByOrder(order)
+	sql_ := fmt.Sprintf("SELECT * from %s %v %v", p.quote(p.model.Name), w.Sql, psa.Sql)
+	var rows *sql.Rows
+	paging := &db.Paging{}
+	if rows, p.Err = p._query(sql_, convertArgs(w)...); p.NotErr() {
+		p.model.MapRowsAsLst(rows, model)
+		paging.Total = p.Count(model)
+		paging.Items = model
+	}
+	return paging
+}
+
 func (p *Scope) PageSql(model T, pf filter.PageFilter, sql string) *db.Paging {
 	p.checkModel(model)
 	paging := &db.Paging{}
@@ -213,6 +232,19 @@ func (p *Scope) buildPage() (sa db.SqlArgs) {
 
 	return
 }
+
+func (p *Scope) buildPageByOrder(order string) (sa db.SqlArgs) {
+	if !p.hasLimit {
+		return
+	}
+
+	if p.orm.dialect.Driver() == "mssql" {
+		sa.Sql = fmt.Sprintf("ORDER BY %v OFFSET %v ROW FETCH NEXT %v ROWS only", order, p.offset, p.limit)
+	}
+
+	return
+}
+
 func (p *Scope) buildInsert(obj T) (sa db.SqlArgs) {
 	var cols []string
 	var params []string
