@@ -38,10 +38,10 @@ func ZincrbyF(k string, inc, m T) (float64, error) { return Default.ZincrbyF(k, 
 func (p *Redis) Zinterstore(d string, keys []string, agg string, w []float64) (int, error) {
 	args := Args(d, len(keys), keys)
 	if agg == "MIN" || agg == "MAX" {
-		args.Add("AGGREGATE", agg)
+		args = args.Add("AGGREGATE", agg)
 	}
 	if len(w) > 0 && len(keys) == len(w) {
-		args.Add("WEIGHTS").AddFlat(w)
+		args = args.Add("WEIGHTS").AddFlat(w)
 	}
 	return redis.Int(p.Do("ZINTERSTORE", args...))
 }
@@ -62,7 +62,7 @@ func ZrangeScore(k string, f, t int) ([]interface{}, error) { return Default.Zra
 func (p *Redis) ZrangeByLex(k string, min, max T, useLimit bool, offset, count int) ([]interface{}, error) {
 	args := Args(k, min, max)
 	if useLimit {
-		args.Add("LIMIT", offset, count)
+		args = args.Add("LIMIT", offset, count)
 	}
 	return redis.Values(p.Do("ZRANGEBYLEX", args...))
 }
@@ -73,7 +73,7 @@ func ZrangeByLex(k string, min, max T, useLimit bool, offset, count int) ([]inte
 func (p *Redis) ZrangeByScore(k string, min, max T, useLimit bool, offset, count int) ([]interface{}, error) {
 	args := Args(k, min, max)
 	if useLimit {
-		args.Add("LIMIT", offset, count)
+		args = args.Add("LIMIT", offset, count)
 	}
 	return redis.Values(p.Do("ZRANGEBYSCORE", args...))
 }
@@ -84,7 +84,7 @@ func ZrangeByScore(k string, min, max T, useLimit bool, offset, count int) ([]in
 func (p *Redis) ZrangeByScoreWiScore(k string, min, max T, useLimit bool, offset, count int) ([]interface{}, error) {
 	args := Args(k, min, max, "WITHSCORES")
 	if useLimit {
-		args.Add("LIMIT", offset, count)
+		args = args.Add("LIMIT", offset, count)
 	}
 	return redis.Values(p.Do("ZRANGEBYSCORE", args...))
 }
@@ -130,7 +130,7 @@ func ZrevRangeScore(k string, f, t int) ([]interface{}, error) { return Default.
 func (p *Redis) ZrevRangeByLex(k string, min, max T, useLimit bool, offset, count int) ([]interface{}, error) {
 	args := Args(k, min, max)
 	if useLimit {
-		args.Add("LIMIT", offset, count)
+		args = args.Add("LIMIT", offset, count)
 	}
 	return redis.Values(p.Do("ZREVRANGEBYLEX", args...))
 }
@@ -138,21 +138,21 @@ func ZrevRangeByLex(k string, min, max T, useLimit bool, offset, count int) ([]i
 	return Default.ZrevRangeByLex(k, min, max, useLimit, offset, count)
 }
 
-func (p *Redis) ZrevRangeByScore(k string, min, max T, useLimit bool, offset, count int) ([]interface{}, error) {
-	args := Args(k, min, max)
+func (p *Redis) ZrevRangeByScore(k string, max, min T, useLimit bool, offset, count int) ([]interface{}, error) {
+	args := Args(k, max, min)
 	if useLimit {
-		args.Add("LIMIT", offset, count)
+		args = args.Add("LIMIT", offset, count)
 	}
 	return redis.Values(p.Do("ZREVRANGEBYSCORE", args...))
 }
-func ZrevRangeByScore(k string, min, max T, useLimit bool, offset, count int) ([]interface{}, error) {
-	return Default.ZrevRangeByScore(k, min, max, useLimit, offset, count)
+func ZrevRangeByScore(k string, max, min T, useLimit bool, offset, count int) ([]interface{}, error) {
+	return Default.ZrevRangeByScore(k, max, min, useLimit, offset, count)
 }
 
 func (p *Redis) ZrevRangeByScoreWiScore(k string, min, max T, useLimit bool, offset, count int) ([]interface{}, error) {
 	args := Args(k, min, max, "WITHSCORES")
 	if useLimit {
-		args.Add("LIMIT", offset, count)
+		args = args.Add("LIMIT", offset, count)
 	}
 	return redis.Values(p.Do("ZREVRANGEBYSCORE", args...))
 }
@@ -177,10 +177,10 @@ func ZscoreF64(k string, m T) (float64, error)             { return Default.Zsco
 func (p *Redis) Zunionstore(d string, keys []string, agg string, w []float64) (int, error) {
 	args := Args(d, len(keys), keys)
 	if agg == "MIN" || agg == "MAX" {
-		args.Add("AGGREGATE", agg)
+		args = args.Add("AGGREGATE", agg)
 	}
 	if len(w) > 0 && len(keys) == len(w) {
-		args.Add("WEIGHTS").AddFlat(w)
+		args = args.Add("WEIGHTS").AddFlat(w)
 	}
 	return redis.Int(p.Do("ZUNIONSTORE", args...))
 }

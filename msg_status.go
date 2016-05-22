@@ -7,7 +7,7 @@ type Status struct {
 	Msg  string
 }
 
-func (p *Status) ErrMsg(msg string) *Status { return p.SetStatus(-1, msg) }
+func (p *Status) ErrMsg(msg string) *Status { return p.SetStatus(1, msg) }
 func (p *Status) OkMsg(msg string) *Status  { return p.SetStatus(0, msg) }
 func (p *Status) Ok() *Status               { return p.SetStatus(0, "OK") }
 func (p *Status) IsOk() bool                { return p.Code == 0 }
