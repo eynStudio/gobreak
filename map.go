@@ -3,6 +3,7 @@ package gobreak
 import (
 	"log"
 	"sort"
+	"strconv"
 )
 
 type M map[string]T
@@ -59,11 +60,16 @@ func (p M) GetSortedKeys() (keys []string) {
 func getValAsInt(v T) int {
 	switch t := v.(type) {
 	case int:
-		return v.(int)
+		return t
 	case float64:
-		return int(v.(float64))
+		return int(t)
+	case string:
+		if i, err := strconv.Atoi(t); err == nil {
+			return i
+		}
+		return 0
 	default:
-		log.Println("%v is %v", v, t)
+		log.Printf("%v is %v\n", v, t)
 		return 0
 	}
 }
@@ -71,11 +77,11 @@ func getValAsInt(v T) int {
 func getValAsF64(v T) float64 {
 	switch t := v.(type) {
 	case int:
-		return float64(v.(int))
+		return float64(t)
 	case float64:
-		return v.(float64)
+		return t
 	default:
-		log.Println("%v is %v", v, t)
+		log.Printf("%v is %v\n", v, t)
 		return 0
 	}
 }
