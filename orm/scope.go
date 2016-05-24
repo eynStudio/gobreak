@@ -75,6 +75,8 @@ func (p *Scope) One(model T) *Scope {
 		p.LogErr()
 		return p
 	}
+	defer rows.Close()
+
 	p.model.MapRowsAsObj(rows, model)
 	return p
 }
@@ -84,7 +86,10 @@ func (p *Scope) All(model T) *Scope {
 	w := p.buildWhere()
 	sql_ := fmt.Sprintf("SELECT * from %s %v", p.quote(p.model.Name), w.Sql)
 	var rows *sql.Rows
+
 	if rows, p.Err = p._query(sql_, convertArgs(w)...); p.NotErr() {
+		defer rows.Close()
+
 		p.model.MapRowsAsLst(rows, model)
 	}
 	return p
@@ -93,7 +98,10 @@ func (p *Scope) All(model T) *Scope {
 func (p *Scope) Query(model T, query string, args ...interface{}) *Scope {
 	p.checkModel(model)
 	var rows *sql.Rows
+
 	if rows, p.Err = p._query(query, args...); p.NotErr() {
+		defer rows.Close()
+
 		p.model.MapRowsAsLst(rows, model)
 	}
 	return p
@@ -114,8 +122,11 @@ func (p *Scope) Page(model T, pf *filter.PageFilter) *db.Paging {
 	psa := p.buildPage()
 	sql_ := fmt.Sprintf("SELECT * from %s %v %v", p.quote(p.model.Name), w.Sql, psa.Sql)
 	var rows *sql.Rows
+
 	paging := &db.Paging{}
 	if rows, p.Err = p._query(sql_, convertArgs(w)...); p.NotErr() {
+		defer rows.Close()
+
 		p.model.MapRowsAsLst(rows, model)
 		paging.Total = p.Count(model)
 		paging.Items = model
@@ -132,8 +143,11 @@ func (p *Scope) PageByOrder(model T, order string, pf *filter.PageFilter) *db.Pa
 	psa := p.buildPageByOrder(order)
 	sql_ := fmt.Sprintf("SELECT * from %s %v %v", p.quote(p.model.Name), w.Sql, psa.Sql)
 	var rows *sql.Rows
+
 	paging := &db.Paging{}
 	if rows, p.Err = p._query(sql_, convertArgs(w)...); p.NotErr() {
+		defer rows.Close()
+
 		p.model.MapRowsAsLst(rows, model)
 		paging.Total = p.Count(model)
 		paging.Items = model
