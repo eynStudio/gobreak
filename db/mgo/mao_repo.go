@@ -23,6 +23,7 @@ type MgoRepo interface {
 	Count(q T) int
 	Page(pf *PageFilter, q interface{}) (pager Paging)
 	PageAs(ptype T, pf *PageFilter, q interface{}) (pager Paging)
+	PageSortAs(pslice T, pf *PageFilter, q interface{}, sort ...string) (pager Paging)
 	GetByQWithFields(q bson.M, fields []string, i T)
 	ListByQWithFields(q bson.M, fields []string, i T)
 	UpdateSetFiled(id GUID, field string, value T)
@@ -90,6 +91,18 @@ func (p *mgoRepo) PageAs(pslice T, pf *PageFilter, q interface{}) (pager Paging)
 	return
 
 }
+
+func (p *mgoRepo) PageSortAs(pslice T, pf *PageFilter, q interface{}, sort ...string) (pager Paging) {
+	sess := p.Ctx.CopySession()
+	defer sess.Close()
+
+	pager.Total, _ = p.C(sess).Find(q).Count()
+	p.C(sess).Find(q).Sort(sort...).Skip(pf.Skip()).Limit(pf.PerPage()).All(pslice)
+	pager.Items = pslice
+	return
+
+}
+
 func (p *mgoRepo) fetchItems(iter *mgo.Iter) []T {
 	result := []T{}
 	model := p.factory()
