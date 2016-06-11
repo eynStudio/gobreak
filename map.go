@@ -44,6 +44,8 @@ func (p M) GetBoolOr(k string, or bool) bool {
 }
 func (p M) GetBool(k string) bool { return p.GetBoolOr(k, false) }
 
+func (p M) GetGuid(k string) GUID { return GUID(p.GetStr(k)) }
+
 func (p M) GetKeys() (keys []string) {
 	for k := range p {
 		keys = append(keys, k)

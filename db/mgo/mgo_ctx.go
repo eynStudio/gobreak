@@ -83,6 +83,7 @@ func (p *MgoCtx) UpdateSetFiled(c *mgo.Collection, id GUID, field string, value 
 
 func (p *MgoCtx) UpdateSetMap(c *mgo.Collection, id GUID, value bson.M) {
 	c.UpdateId(id, bson.M{"$set": value})
+
 }
 
 func Fields2BsonM(fields []string) bson.M {

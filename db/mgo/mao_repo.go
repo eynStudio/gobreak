@@ -8,6 +8,8 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
+type CFunc func(c *mgo.Collection)
+
 type MgoRepo interface {
 	Repo
 	NewId() GUID
@@ -29,6 +31,7 @@ type MgoRepo interface {
 	UpdateSetFiled(id GUID, field string, value T)
 	UpdateSetMap(id GUID, value bson.M)
 	GetWithFields(id GUID, fields []string, i T)
+	Sess(f CFunc)
 }
 
 type mgoRepo struct {
@@ -214,6 +217,11 @@ func (p *mgoRepo) UpdateSetFiled(id GUID, field string, value T) {
 	p.Ctx.UpdateSetFiled(p.C(sess), id, field, value)
 }
 
+func (p *mgoRepo) Sess(f CFunc) {
+	sess := p.Ctx.CopySession()
+	defer sess.Close()
+	f(p.C(sess))
+}
 func (p *mgoRepo) UpdateSetMap(id GUID, value bson.M) {
 	sess := p.Ctx.CopySession()
 	defer sess.Close()

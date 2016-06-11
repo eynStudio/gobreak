@@ -32,6 +32,11 @@ func (p *Error) SetErrIf(yes bool, msg string) {
 		p.SetErr(msg)
 	}
 }
+func (p *Error) SetErrfIf(yes bool, f string, args ...interface{}) {
+	if yes {
+		p.SetErrf(f, args...)
+	}
+}
 
 func (p Error) GetStatus() (m Status) {
 	if p.IsErr() {

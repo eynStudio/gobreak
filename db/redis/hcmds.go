@@ -18,6 +18,15 @@ func Hexists(k string, f T) (int, error)            { return Default.Hexists(k, 
 func (p *Redis) Hget(k string, f T) (interface{}, error) { return p.Do("HGET", k, f) }
 func Hget(k string, f T) (interface{}, error)            { return Default.Hget(k, f) }
 
+func (p *Redis) HgetStruct(k string, v T) (err error) {
+	var vals []interface{}
+	if vals, err = p.Hgetall(k); err != nil {
+		return
+	}
+	return redis.ScanStruct(vals, v)
+}
+func HgetStruct(k string, v T) (err error) { return Default.HgetStruct(k, v) }
+
 func (p *Redis) HgetJson(k string, f T, m T) error {
 	data, err := redis.Bytes(p.Hget(k, f))
 	NoErrExec(err, func() { err = json.Unmarshal(data, m) })
@@ -43,12 +52,12 @@ func (p *Redis) Hlen(k string) (int, error) { return redis.Int(p.Do("HLEN", k)) 
 func Hlen(k string) (int, error)            { return Default.Hlen(k) }
 
 func (p *Redis) Hmget(k string, args ...T) ([]interface{}, error) {
-	return redis.Values(p.Do("HMGET", Args(k, args)...))
+	return redis.Values(p.Do("HMGET", Args(k, args...)...))
 }
 func Hmget(k string, args ...T) ([]interface{}, error) { return Default.Hmget(k, args...) }
 
 func (p *Redis) Hmset(k string, args ...T) (string, error) {
-	return redis.String(p.Do("HMSET", Args(k, args)...))
+	return redis.String(p.Do("HMSET", Args(k, args...)...))
 }
 func Hmset(k string, args ...T) (string, error) { return Default.Hmset(k, args...) }
 
