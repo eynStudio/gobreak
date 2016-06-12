@@ -25,6 +25,7 @@ type MgoRepo interface {
 	Count(q T) int
 	Page(pf *PageFilter, q interface{}) (pager Paging)
 	PageAs(ptype T, pf *PageFilter, q interface{}) (pager Paging)
+	PageAs2(slice T, pf *PageFilter, query, selector T, sortfields []string) (pager Paging)
 	PageSortAs(pslice T, pf *PageFilter, q interface{}, sort ...string) (pager Paging)
 	GetByQWithFields(q bson.M, fields []string, i T)
 	ListByQWithFields(q bson.M, fields []string, i T)
@@ -92,7 +93,22 @@ func (p *mgoRepo) PageAs(pslice T, pf *PageFilter, q interface{}) (pager Paging)
 	p.C(sess).Find(q).Skip(pf.Skip()).Limit(pf.PerPage()).All(pslice)
 	pager.Items = pslice
 	return
+}
 
+func (p *mgoRepo) PageAs2(slice T, pf *PageFilter, query, selector T, sortfields []string) (pager Paging) {
+	p.Sess(func(c *mgo.Collection) {
+		pager.Total, _ = c.Find(query).Count()
+		q := c.Find(query).Skip(pf.Skip()).Limit(pf.PerPage())
+		if selector != nil {
+			q = q.Select(selector)
+		}
+		if sortfields != nil {
+			q = q.Sort(sortfields...)
+		}
+		q.All(slice)
+		pager.Items = slice
+	})
+	return
 }
 
 func (p *mgoRepo) PageSortAs(pslice T, pf *PageFilter, q interface{}, sort ...string) (pager Paging) {
