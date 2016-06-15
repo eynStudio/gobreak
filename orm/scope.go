@@ -3,6 +3,7 @@ package orm
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"strings"
 
 	. "github.com/eynstudio/gobreak"
@@ -143,7 +144,6 @@ func (p *Scope) PageByOrder(model T, order string, pf *filter.PageFilter) *db.Pa
 	psa := p.buildPageByOrder(order)
 	sql_ := fmt.Sprintf("SELECT * from %s %v %v", p.quote(p.model.Name), w.Sql, psa.Sql)
 	var rows *sql.Rows
-
 	paging := &db.Paging{}
 	if rows, p.Err = p._query(sql_, convertArgs(w)...); p.NotErr() {
 		defer rows.Close()

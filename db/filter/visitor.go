@@ -70,7 +70,7 @@ func (p *Visitor) VisitRule(f Rule) (vr SqlArgs) {
 	case "!like":
 		vr.Sql = fmt.Sprintf("%s not like ?", f.F)
 		vr.AddArgs("%" + f.V1 + "%")
-	case "=", "<>":
+	case "=", "<>", ">=", ">", "<", "<=":
 		vr.Sql = fmt.Sprintf("%s %s ?", f.F, f.O)
 		vr.AddArgs(f.V1)
 	case "empty":
@@ -88,6 +88,9 @@ func (p *Visitor) VisitRule(f Rule) (vr SqlArgs) {
 		}
 		vs := strings.Join(ss, ",")
 		vr.Sql = fmt.Sprintf("%s %s (%s)", f.F, f.O, vs)
+	case "between":
+		vr.Sql = fmt.Sprintf("%s %s ? and ?", f.F, f.O)
+		vr.AddArgs(f.V1, f.V2)
 	}
 	return
 }
