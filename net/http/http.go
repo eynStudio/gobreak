@@ -8,6 +8,19 @@ import (
 	. "github.com/eynstudio/gobreak"
 )
 
+//Post with Header
+func PostWiHeader(url, post string, header M) ([]byte, error) {
+	req, err := http.NewRequest("POST", url, strings.NewReader(post))
+	if err != nil {
+		return nil, err
+	}
+	for k, _ := range header {
+		req.Header.Set(k, header.GetStr(k))
+	}
+	return GetRespBytes(http.DefaultClient.Do(req))
+}
+
+
 func PostJson(url, post string) ([]byte, error) {
 	resp, err := http.Post(url, "application/json", strings.NewReader(post))
 	return GetRespBytes(resp, err)
