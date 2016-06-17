@@ -2,6 +2,7 @@ package http
 
 import (
 	"io/ioutil"
+	"net"
 	"net/http"
 	"strings"
 
@@ -19,7 +20,6 @@ func PostWiHeader(url, post string, header M) ([]byte, error) {
 	}
 	return GetRespBytes(http.DefaultClient.Do(req))
 }
-
 
 func PostJson(url, post string) ([]byte, error) {
 	resp, err := http.Post(url, "application/json", strings.NewReader(post))
@@ -62,4 +62,12 @@ func GetRespBytes(resp *http.Response, err error) ([]byte, error) {
 	}
 	defer resp.Body.Close()
 	return ioutil.ReadAll(resp.Body)
+}
+
+func GetReqIp(r *http.Request) string {
+	if ipProxy := r.Header.Get("X-FORWARDED-FOR"); len(ipProxy) > 0 {
+		return ipProxy
+	}
+	ip, _, _ := net.SplitHostPort(r.RemoteAddr)
+	return ip
 }
