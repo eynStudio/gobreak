@@ -29,11 +29,23 @@ type Filter struct {
 
 type PageFilter struct{ Filter }
 
-func (p *Filter) Search() string   { return p.Ext.GetStr("search") }
-func (p *Filter) Role() string     { return p.Ext.GetStr("role") }
-func (p *PageFilter) Page() int    { return p.Ext.GetIntOr("page", 1) }
-func (p *PageFilter) PerPage() int { return p.Ext.GetIntOr("perPage", 20) }
-func (p *PageFilter) Skip() int    { return (p.Page() - 1) * p.PerPage() }
+func (p *Filter) Search() string { return p.Ext.GetStr("search") }
+func (p *Filter) Role() string   { return p.Ext.GetStr("role") }
+func (p *PageFilter) Page() int {
+	n := p.Ext.GetIntOr("page", 1)
+	if n < 1 {
+		n = 1
+	}
+	return n
+}
+func (p *PageFilter) PerPage() int {
+	n := p.Ext.GetIntOr("perPage", 20)
+	if n < 1 {
+		n = 20
+	}
+	return n
+}
+func (p *PageFilter) Skip() int { return (p.Page() - 1) * p.PerPage() }
 
 func NewPageFilter(page, perPage int) *PageFilter {
 	p := &PageFilter{}

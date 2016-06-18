@@ -3,6 +3,7 @@ package orm
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"strings"
 
 	. "github.com/eynstudio/gobreak"
@@ -122,7 +123,7 @@ func (p *Scope) Page(model T, pf *filter.PageFilter) *db.Paging {
 	psa := p.buildPage()
 	sql_ := fmt.Sprintf("SELECT * from %s %v %v", p.quote(p.model.Name), w.Sql, psa.Sql)
 	var rows *sql.Rows
-
+	log.Println(sql_, w.Args)
 	paging := &db.Paging{}
 	if rows, p.Err = p._query(sql_, convertArgs(w)...); p.NotErr() {
 		defer rows.Close()
@@ -238,8 +239,9 @@ func (p *Scope) buildPage() (sa db.SqlArgs) {
 	if !p.hasLimit {
 		return
 	}
-
-	if p.orm.dialect.Driver() == "mssql" {
+	if p.orm.dialect.Driver() == "mysql" {
+		sa.Sql = fmt.Sprintf("limit %v,%v", p.offset, p.limit)
+	} else if p.orm.dialect.Driver() == "mssql" {
 		sa.Sql = fmt.Sprintf("ORDER BY %v OFFSET %v ROW FETCH NEXT %v ROWS only", p.model.Id(), p.offset, p.limit)
 	}
 
@@ -251,7 +253,9 @@ func (p *Scope) buildPageByOrder(order string) (sa db.SqlArgs) {
 		return
 	}
 
-	if p.orm.dialect.Driver() == "mssql" {
+	if p.orm.dialect.Driver() == "mysql" {
+		sa.Sql = fmt.Sprintf("order by %v limit %v,%v", order, p.offset, p.limit)
+	} else if p.orm.dialect.Driver() == "mssql" {
 		sa.Sql = fmt.Sprintf("ORDER BY %v OFFSET %v ROW FETCH NEXT %v ROWS only", order, p.offset, p.limit)
 	}
 
