@@ -12,6 +12,11 @@ import (
 	. "github.com/eynstudio/gobreak"
 )
 
+type UrlStatus struct {
+	Status
+	Url string
+}
+
 type SaveYyyyMmFile struct {
 	Error
 	ext        []string
@@ -80,3 +85,11 @@ func (p *SaveYyyyMmFile) checkSaveFileName() {
 
 func (p *SaveYyyyMmFile) setUploadErr()          { p.SetErr("文件上传失败") }
 func (p SaveYyyyMmFile) GetSaveFilePath() string { return "/" + p.saveName }
+
+func (p SaveYyyyMmFile) GetUrlStatus() (m UrlStatus) {
+	m.Status = p.GetStatus()
+	if p.NotErr() {
+		m.Url = p.GetSaveFilePath()
+	}
+	return
+}
