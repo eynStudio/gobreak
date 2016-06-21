@@ -1,6 +1,10 @@
 package http
 
 import (
+	"bytes"
+	"encoding/json"
+	"errors"
+	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -9,35 +13,37 @@ import (
 	. "github.com/eynstudio/gobreak"
 )
 
-//Post with Header
-func PostWiHeader(url, post string, header M) ([]byte, error) {
-	req, err := http.NewRequest("POST", url, strings.NewReader(post))
+var NotSupportErr = errors.New("Data type not support")
+
+func PostWiHeader(url string, post T, header M) ([]byte, error) {
+	r, err := getReader(post, "")
 	if err != nil {
 		return nil, err
 	}
+
+	req, err := http.NewRequest("POST", url, r)
+	if err != nil {
+		return nil, err
+	}
+
 	for k, _ := range header {
 		req.Header.Set(k, header.GetStr(k))
 	}
 	return GetRespBytes(http.DefaultClient.Do(req))
 }
 
-func PostJson(url, post string) ([]byte, error) {
-	resp, err := http.Post(url, "application/json", strings.NewReader(post))
-	return GetRespBytes(resp, err)
-}
+func PostJson(url string, post T) ([]byte, error) { return PostJsonWiHeader(url, post, nil) }
 
-//Post json with Header
-func PostJsonWiHeader(url, post string, m M) ([]byte, error) {
-	req, err := http.NewRequest("POST", url, strings.NewReader(post))
+func PostJsonWiHeader(url string, post T, m M) ([]byte, error) {
+	r, err := getReader(post, "json")
 	if err != nil {
 		return nil, err
 	}
-
-	req.Header.Set("Content-Type", "application/json")
-	for k, _ := range m {
-		req.Header.Set(k, m.GetStr(k))
+	if m == nil {
+		m = M{}
 	}
-	return GetRespBytes(http.DefaultClient.Do(req))
+	m["Content-Type"] = "application/json"
+	return PostWiHeader(url, r, m)
 }
 
 func Get(url string) ([]byte, error) {
@@ -70,4 +76,26 @@ func GetReqIp(r *http.Request) string {
 	}
 	ip, _, _ := net.SplitHostPort(r.RemoteAddr)
 	return ip
+}
+
+func getReader(data T, objType string) (r io.Reader, err error) {
+	switch v := data.(type) {
+	case io.Reader:
+		return v, nil
+	case []byte:
+		return bytes.NewReader(v), nil
+	case string:
+		return strings.NewReader(v), nil
+	default:
+		switch objType {
+		case "json":
+			if v, err := json.Marshal(data); err != nil {
+				return nil, err
+			} else {
+				return bytes.NewReader(v), nil
+			}
+		default:
+			return nil, NotSupportErr
+		}
+	}
 }
