@@ -3,6 +3,7 @@ package http
 import (
 	"bytes"
 	"encoding/json"
+	"encoding/xml"
 	"errors"
 	"io"
 	"io/ioutil"
@@ -13,54 +14,82 @@ import (
 	. "github.com/eynstudio/gobreak"
 )
 
-var NotSupportErr = errors.New("Data type not support")
+var (
+	NotSupportErr = errors.New("Data type not support")
+	jsonHeader    = M{"Content-Type": "application/json"}
+)
 
-func PostWiHeader(url string, post T, header M) ([]byte, error) {
-	r, err := getReader(post, "")
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", url, r)
-	if err != nil {
-		return nil, err
-	}
-
-	for k, _ := range header {
-		req.Header.Set(k, header.GetStr(k))
-	}
-	return GetRespBytes(http.DefaultClient.Do(req))
+type Http struct {
+	Error
+	req    *http.Request
+	resp   *http.Response
+	reader io.Reader
 }
 
-func PostJson(url string, post T) ([]byte, error) { return PostJsonWiHeader(url, post, nil) }
+func New() *Http { return &Http{} }
 
-func PostJsonWiHeader(url string, post T, m M) ([]byte, error) {
-	r, err := getReader(post, "json")
-	if err != nil {
-		return nil, err
-	}
-	if m == nil {
-		m = M{}
-	}
-	m["Content-Type"] = "application/json"
-	return PostWiHeader(url, r, m)
+func (p *Http) Get(url string) *Http {
+	p.NoErrExec(func() { p.req, p.Err = http.NewRequest("GET", url, nil) })
+	return p
 }
 
-func Get(url string) ([]byte, error) {
-	return GetRespBytes(http.Get(url))
+func (p *Http) Post(url string, data T, fmtType string) *Http {
+	p.getReader(data, fmtType)
+	p.NoErrExec(func() { p.req, p.Err = http.NewRequest("POST", url, p.reader) })
+	return p
 }
 
-//Get with Header
-func GetWiHeader(url string, m M) ([]byte, error) {
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, err
+func (p *Http) Header(header M) *Http {
+	if p.NotErr() {
+		for k, _ := range header {
+			p.req.Header.Set(k, header.GetStr(k))
+		}
 	}
-	for k, _ := range m {
-		req.Header.Set(k, m.GetStr(k))
-	}
-	return GetRespBytes(http.DefaultClient.Do(req))
+	return p
 }
+
+func (p *Http) GetBytes() (data []byte) {
+	p.NoErrExec(func() { data, p.Err = GetRespBytes(http.DefaultClient.Do(p.req)) })
+	return data
+}
+func (p *Http) GetStr() (str string) { return string(p.GetBytes()) }
+func (p *Http) GetJson(m T) *Http {
+	data := p.GetBytes()
+	p.NoErrExec(func() { p.Err = json.Unmarshal(data, m) })
+	return p
+}
+func (p *Http) GetXml(m T) *Http {
+	data := p.GetBytes()
+	p.NoErrExec(func() { p.Err = xml.Unmarshal(data, m) })
+	return p
+}
+
+func (p *Http) getReader(data T, objType string) {
+	switch v := data.(type) {
+	case io.Reader:
+		p.reader = v
+	case []byte:
+		p.reader = bytes.NewReader(v)
+	case string:
+		p.reader = strings.NewReader(v)
+	default:
+		switch objType {
+		case "json":
+			var v []byte
+			if v, p.Err = json.Marshal(data); p.NotErr() {
+				p.reader = bytes.NewReader(v)
+			}
+		default:
+			p.Err = NotSupportErr
+		}
+	}
+}
+
+func Get(url string) *Http                           { return New().Get(url) }
+func GetWiHeader(url string, m M) *Http              { return New().Get(url).Header(m) }
+func Post(url string, post T, fmtType string) *Http  { return New().Post(url, post, fmtType) }
+func PostJson(url string, post T) *Http              { return New().Post(url, post, "json").Header(jsonHeader) }
+func PostJsonWiHeader(url string, post T, m M) *Http { return PostJson(url, post).Header(m) }
 
 func GetRespBytes(resp *http.Response, err error) ([]byte, error) {
 	if err != nil {
@@ -76,26 +105,4 @@ func GetReqIp(r *http.Request) string {
 	}
 	ip, _, _ := net.SplitHostPort(r.RemoteAddr)
 	return ip
-}
-
-func getReader(data T, objType string) (r io.Reader, err error) {
-	switch v := data.(type) {
-	case io.Reader:
-		return v, nil
-	case []byte:
-		return bytes.NewReader(v), nil
-	case string:
-		return strings.NewReader(v), nil
-	default:
-		switch objType {
-		case "json":
-			if v, err := json.Marshal(data); err != nil {
-				return nil, err
-			} else {
-				return bytes.NewReader(v), nil
-			}
-		default:
-			return nil, NotSupportErr
-		}
-	}
 }
