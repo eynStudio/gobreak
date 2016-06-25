@@ -3,7 +3,7 @@ package orm
 import (
 	"database/sql"
 	"reflect"
-	"time"
+	//	"time"
 
 	. "github.com/eynstudio/gobreak"
 )
@@ -93,8 +93,8 @@ func (p *model) GetValuesForSqlRowScan(cols []string) []interface{} {
 				values[index] = reflect.New(reflect.PtrTo(reflect.TypeOf(""))).Interface()
 			} else if field.Field.Kind() == reflect.Struct {
 				switch field.Field.Type().String() {
-				case "time.Time":
-					values[index] = reflect.New(reflect.PtrTo(reflect.TypeOf(""))).Interface()
+				//				case "time.Time":
+				//					values[index] = reflect.New(reflect.PtrTo(reflect.TypeOf(""))).Interface()
 				default:
 					values[index] = reflect.New(reflect.PtrTo(field.Field.Type())).Interface()
 				}
@@ -120,13 +120,13 @@ func (p *model) MapObjFromRowValues(cols []string, values []interface{}) reflect
 				if v := reflect.ValueOf(value).Elem().Elem(); v.IsValid() {
 					obj.FieldByName(column).SetString(v.Interface().(string))
 				}
-			} else if field.Field.Kind() == reflect.Struct {
-				switch field.Field.Type().String() {
-				case "time.Time":
-					v := reflect.ValueOf(value).Elem().Elem()
-					t, _ := time.Parse(timeFormate, v.Interface().(string))
-					obj.FieldByName(column).Set(reflect.ValueOf(t))
-				}
+				//			} else if field.Field.Kind() == reflect.Struct {
+				//				switch field.Field.Type().String() {
+				//				case "time.Time":
+				//					v := reflect.ValueOf(value).Elem().Elem()
+				//					t, _ := time.Parse(timeFormate, v.Interface().(string))
+				//					obj.FieldByName(column).Set(reflect.ValueOf(t))
+				//				}
 			} else if v := reflect.ValueOf(value).Elem().Elem(); v.IsValid() {
 				obj.FieldByName(column).Set(v)
 			}

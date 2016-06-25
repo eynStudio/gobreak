@@ -20,6 +20,8 @@ func NewDialect(driver string) Dialect {
 	switch driver {
 	case "mysql":
 		d = &mysql{}
+	case "postgres":
+		d = &pg{}
 	case "mssql":
 		d = &mssql{}
 	case "oci8":

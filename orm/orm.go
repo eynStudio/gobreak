@@ -2,6 +2,7 @@ package orm
 
 import (
 	"database/sql"
+	"log"
 
 	. "github.com/eynstudio/gobreak"
 	"github.com/eynstudio/gobreak/db"
@@ -110,6 +111,7 @@ func (p *Orm) Begin() (ts *TxScope) {
 }
 
 func (p *Orm) RawCount(query string, args ...interface{}) (count int64, err error) {
+	log.Println(query)
 	err = p.db.QueryRow(query, args...).Scan(&count)
 	return
 }

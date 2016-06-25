@@ -58,7 +58,7 @@ func (p *Scope) Has(model T) bool {
 	id := p.model.Id()
 	var sa db.SqlArgs
 	sa.AddArgs(p.model.IdVal(model))
-	sa.Sql = fmt.Sprintf("SELECT COUNT(%v) from %s WHERE %v=?", p.quote(id), p.quote(p.model.Name), id)
+	sa.Sql = fmt.Sprintf("SELECT COUNT(%v) from %s WHERE %v=?", p.quote(id), p.quote(p.model.Name), p.quote(id))
 	row := p._queryRow(sa.Sql, convertArgs(sa)...)
 	count := 0
 	if err := row.Scan(&count); err != nil {
@@ -145,6 +145,7 @@ func (p *Scope) PageByOrder(model T, order string, pf *filter.PageFilter) *db.Pa
 	sql_ := fmt.Sprintf("SELECT * from %s %v %v", p.quote(p.model.Name), w.Sql, psa.Sql)
 	var rows *sql.Rows
 	paging := &db.Paging{}
+	log.Println(sql_)
 	if rows, p.Err = p._query(sql_, convertArgs(w)...); p.NotErr() {
 		defer rows.Close()
 
@@ -223,6 +224,7 @@ func (p *Scope) buildWhere() (sa db.SqlArgs) {
 		sa.AddArgs(p.whereargs...)
 	} else if p.pf != nil {
 		visitor := filter.Visitor{}
+		visitor.Quote = p.orm.dialect.Quote
 		sa = visitor.Visitor(p.pf.Group)
 		if sa.Sql != "" {
 			sa.Sql = "WHERE " + sa.Sql
@@ -253,7 +255,10 @@ func (p *Scope) buildPageByOrder(order string) (sa db.SqlArgs) {
 		return
 	}
 
-	if p.orm.dialect.Driver() == "mysql" {
+	if p.orm.dialect.Driver() == "postgres" {
+		sa.Sql = fmt.Sprintf("order by %v limit %v offset %v", order, p.limit, p.offset)
+		log.Println(sa.Sql)
+	} else if p.orm.dialect.Driver() == "mysql" {
 		sa.Sql = fmt.Sprintf("order by %v limit %v,%v", order, p.offset, p.limit)
 	} else if p.orm.dialect.Driver() == "mssql" {
 		sa.Sql = fmt.Sprintf("ORDER BY %v OFFSET %v ROW FETCH NEXT %v ROWS only", order, p.offset, p.limit)
@@ -266,10 +271,12 @@ func (p *Scope) buildInsert(obj T) (sa db.SqlArgs) {
 	var cols []string
 	var params []string
 	m := p.model.Obj2Map(obj)
+	i := 1
 	for k, v := range m {
 		cols = append(cols, p.quote(k))
 		params = append(params, "?")
 		sa.AddArgs(v)
+		i += 1
 	}
 	sa.Sql = fmt.Sprintf("insert into %s (%v) values (%v)",
 		p.quote(p.model.Name),
@@ -283,9 +290,11 @@ func (p *Scope) buildUpdate(obj T) (sa db.SqlArgs) {
 	w := p.buildWhere()
 	var cols []string
 	m := p.model.Obj2Map(obj)
+	i := len(w.Args) + 1
 	for k, v := range m {
 		cols = append(cols, p.quote(k)+"=?")
 		sa.AddArgs(v)
+		i += 1
 	}
 	sa.AddArgs(w.Args...)
 
@@ -297,11 +306,13 @@ func (p *Scope) buildUpdateFields(obj T, fields []string) (sa db.SqlArgs) {
 	w := p.buildWhere()
 	var cols []string
 	m := p.model.Obj2Map(obj)
+	i := len(w.Args) + 1
 	for k, v := range m {
 		for _, it := range fields {
 			if it == k {
 				cols = append(cols, p.quote(k)+"=?")
 				sa.AddArgs(v)
+				i += 1
 			}
 		}
 	}
@@ -341,6 +352,7 @@ func convertArgs(sa db.SqlArgs) []interface{} {
 func (p Scope) IsNotFound() bool { return p.IsErr() && p.Err == db.DbNotFound }
 
 func (p *Scope) _query(query string, args ...interface{}) (*sql.Rows, error) {
+	query = p.convParams(query)
 	if p.hasTx() {
 		return p.Tx.Query(query, args...)
 	}
@@ -348,6 +360,7 @@ func (p *Scope) _query(query string, args ...interface{}) (*sql.Rows, error) {
 }
 
 func (p *Scope) _queryRow(query string, args ...interface{}) *sql.Row {
+	query = p.convParams(query)
 	if p.hasTx() {
 		return p.Tx.QueryRow(query, args...)
 	}
@@ -356,12 +369,28 @@ func (p *Scope) _queryRow(query string, args ...interface{}) *sql.Row {
 
 func (p *Scope) exec(sa db.SqlArgs) {
 	params := convertArgs(sa)
+	query := p.convParams(sa.Sql)
 	if p.hasTx() {
-		_, p.Err = p.Tx.Exec(sa.Sql, params...)
+		_, p.Err = p.Tx.Exec(query, params...)
 
 	} else {
-		_, p.Err = p.orm.db.Exec(sa.Sql, params...)
+		_, p.Err = p.orm.db.Exec(query, params...)
 	}
+}
+
+func (p Scope) convParams(sql string) (str string) {
+	if p.orm.dialect.Driver() != "postgres" {
+		return sql
+	}
+	parts := strings.Split(sql, "?")
+	l := len(parts)
+	for i, c := range parts {
+		if i < l-1 {
+			str += c + fmt.Sprintf("%s%v", "$", i+1)
+		}
+	}
+	str += parts[l-1]
+	return
 }
 
 func (p Scope) hasTx() bool { return p.Tx != nil }

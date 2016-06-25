@@ -28,6 +28,14 @@ func (p VisitorResults) Join(con string) (vr SqlArgs) {
 }
 
 type Visitor struct {
+	Quote func(v string) string
+}
+
+func (p *Visitor) quote(v string) string {
+	if p.Quote == nil {
+		return v
+	}
+	return p.Quote(v)
 }
 
 func (p *Visitor) Visitor(filter Group) SqlArgs {
@@ -58,7 +66,7 @@ func (p *Visitor) VisitRules(con string, rules []Rule) (vr SqlArgs) {
 func (p *Visitor) VisitRule(f Rule) (vr SqlArgs) {
 	switch f.O {
 	case "like", "start", "end":
-		vr.Sql = fmt.Sprintf("%s like ?", f.F)
+		vr.Sql = fmt.Sprintf("%s like ?", p.Quote(f.F))
 		switch f.O {
 		case "like":
 			vr.AddArgs("%" + f.V1 + "%")
@@ -68,16 +76,16 @@ func (p *Visitor) VisitRule(f Rule) (vr SqlArgs) {
 			vr.AddArgs("%" + f.V1)
 		}
 	case "!like":
-		vr.Sql = fmt.Sprintf("%s not like ?", f.F)
+		vr.Sql = fmt.Sprintf("%s not like ?", p.Quote(f.F))
 		vr.AddArgs("%" + f.V1 + "%")
 	case "=", "<>", ">=", ">", "<", "<=":
-		vr.Sql = fmt.Sprintf("%s %s ?", f.F, f.O)
+		vr.Sql = fmt.Sprintf("%s %s ?", p.Quote(f.F), f.O)
 		vr.AddArgs(f.V1)
 	case "empty":
-		vr.Sql = fmt.Sprintf("%s = ?", f.F)
+		vr.Sql = fmt.Sprintf("%s = ?", p.Quote(f.F))
 		vr.AddArgs("")
 	case "!empty":
-		vr.Sql = fmt.Sprintf("%s <> ?", f.F)
+		vr.Sql = fmt.Sprintf("%s <> ?", p.Quote(f.F))
 		vr.AddArgs("")
 	case "in":
 		var ss []string
@@ -87,9 +95,9 @@ func (p *Visitor) VisitRule(f Rule) (vr SqlArgs) {
 			vr.Args = append(vr.Args, it)
 		}
 		vs := strings.Join(ss, ",")
-		vr.Sql = fmt.Sprintf("%s %s (%s)", f.F, f.O, vs)
+		vr.Sql = fmt.Sprintf("%s %s (%s)", p.Quote(f.F), f.O, vs)
 	case "between":
-		vr.Sql = fmt.Sprintf("%s %s ? and ?", f.F, f.O)
+		vr.Sql = fmt.Sprintf("%s %s ? and ?", p.Quote(f.F), f.O)
 		vr.AddArgs(f.V1, f.V2)
 	}
 	return
