@@ -2,6 +2,7 @@ package orm
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"log"
 	"strings"
@@ -96,11 +97,28 @@ func (p *Scope) All(model T) *Scope {
 	return p
 }
 
+func (p *Scope) AllJson(model T, lst *[][]byte) *Scope {
+	p.checkModel(model)
+	//	w := p.buildWhere()
+	sql_ := fmt.Sprintf(`SELECT "Json" from %s `, p.quote(p.model.Name))
+	var rows *sql.Rows
+	if rows, p.Err = p._query(sql_); p.NotErr() {
+		defer rows.Close()
+		for rows.Next() {
+			var v []byte
+			rows.Scan(&v)
+			json.Unmarshal(v, &model)
+			*lst = append(*lst, v)
+		}
+	}
+	return p
+}
+
 func (p *Scope) Query(model T, query string, args ...interface{}) *Scope {
 	p.checkModel(model)
 	var rows *sql.Rows
 
-	if rows, p.Err = p._query(query, args...); p.NotErr() {
+	if rows, p.Err = p._query(query, convertArgs2(args)...); p.NotErr() {
 		defer rows.Close()
 
 		p.model.MapRowsAsLst(rows, model)
@@ -165,6 +183,11 @@ func (p *Scope) PageSql(model T, pf filter.PageFilter, sql string) *db.Paging {
 }
 func (p *Scope) Save(model T) *Scope {
 	p.checkModel(model)
+
+	if p.orm.dialect.Driver() == "postgres" {
+		return p.exec(p.buildUpsert(model))
+	}
+
 	if p.Has(model) {
 		p.Update(model)
 	} else {
@@ -173,6 +196,17 @@ func (p *Scope) Save(model T) *Scope {
 	return p
 }
 
+func (p *Scope) SaveJson(id GUID, data T) *Scope {
+	p.checkModel(data)
+	buf, _ := json.Marshal(data)
+	//	v := Jsonb{Id: id.String(), Json: buf}
+	var sa db.SqlArgs
+	sa.Sql = fmt.Sprintf(`Insert into %v("Id","Json") values($1,$2)`, p.quote(p.model.Name))
+	sa.AddArgs(id, buf)
+	log.Println(sa.Sql)
+	p.exec(sa)
+	return p
+}
 func (p *Scope) Insert(model T) *Scope {
 	p.checkModel(model)
 	sa := p.buildInsert(model)
@@ -271,12 +305,10 @@ func (p *Scope) buildInsert(obj T) (sa db.SqlArgs) {
 	var cols []string
 	var params []string
 	m := p.model.Obj2Map(obj)
-	i := 1
 	for k, v := range m {
 		cols = append(cols, p.quote(k))
 		params = append(params, "?")
 		sa.AddArgs(v)
-		i += 1
 	}
 	sa.Sql = fmt.Sprintf("insert into %s (%v) values (%v)",
 		p.quote(p.model.Name),
@@ -286,15 +318,32 @@ func (p *Scope) buildInsert(obj T) (sa db.SqlArgs) {
 	return
 }
 
+func (p *Scope) buildUpsert(obj T) (sa db.SqlArgs) {
+	var cols []string
+	var params []string
+	m := p.model.Obj2Map(obj)
+	i := 1
+	for k, v := range m {
+		cols = append(cols, p.quote(k))
+		params = append(params, fmt.Sprintf("$%d", i))
+		sa.AddArgs(v)
+		i += 1
+	}
+	cc := strings.Join(cols, ",")
+	pp := strings.Join(params, ",")
+	sa.Sql = fmt.Sprintf(`insert into %s (%v) values (%v) ON CONFLICT ("Id") DO UPDATE SET (%v)=(%v)`,
+		p.quote(p.model.Name), cc, pp, cc, pp,
+	)
+	return
+}
+
 func (p *Scope) buildUpdate(obj T) (sa db.SqlArgs) {
 	w := p.buildWhere()
 	var cols []string
 	m := p.model.Obj2Map(obj)
-	i := len(w.Args) + 1
 	for k, v := range m {
 		cols = append(cols, p.quote(k)+"=?")
 		sa.AddArgs(v)
-		i += 1
 	}
 	sa.AddArgs(w.Args...)
 
@@ -306,13 +355,11 @@ func (p *Scope) buildUpdateFields(obj T, fields []string) (sa db.SqlArgs) {
 	w := p.buildWhere()
 	var cols []string
 	m := p.model.Obj2Map(obj)
-	i := len(w.Args) + 1
 	for k, v := range m {
 		for _, it := range fields {
 			if it == k {
 				cols = append(cols, p.quote(k)+"=?")
 				sa.AddArgs(v)
-				i += 1
 			}
 		}
 	}
@@ -337,8 +384,12 @@ func (p *Scope) setWhereIdIfNoWhere(model T) {
 }
 
 func convertArgs(sa db.SqlArgs) []interface{} {
+	return convertArgs2(sa.Args)
+}
+
+func convertArgs2(args []interface{}) []interface{} {
 	params := []interface{}{}
-	for _, arg := range sa.Args {
+	for _, arg := range args {
 		switch a := arg.(type) {
 		case GUID:
 			params = append(params, string(a))
@@ -352,7 +403,7 @@ func convertArgs(sa db.SqlArgs) []interface{} {
 func (p Scope) IsNotFound() bool { return p.IsErr() && p.Err == db.DbNotFound }
 
 func (p *Scope) _query(query string, args ...interface{}) (*sql.Rows, error) {
-	query = p.convParams(query)
+	query = p.orm.convParams(query)
 	if p.hasTx() {
 		return p.Tx.Query(query, args...)
 	}
@@ -360,37 +411,23 @@ func (p *Scope) _query(query string, args ...interface{}) (*sql.Rows, error) {
 }
 
 func (p *Scope) _queryRow(query string, args ...interface{}) *sql.Row {
-	query = p.convParams(query)
+	query = p.orm.convParams(query)
 	if p.hasTx() {
 		return p.Tx.QueryRow(query, args...)
 	}
 	return p.orm.db.QueryRow(query, args...)
 }
 
-func (p *Scope) exec(sa db.SqlArgs) {
+func (p *Scope) exec(sa db.SqlArgs) *Scope {
 	params := convertArgs(sa)
-	query := p.convParams(sa.Sql)
+	query := p.orm.convParams(sa.Sql)
 	if p.hasTx() {
 		_, p.Err = p.Tx.Exec(query, params...)
 
 	} else {
 		_, p.Err = p.orm.db.Exec(query, params...)
 	}
-}
-
-func (p Scope) convParams(sql string) (str string) {
-	if p.orm.dialect.Driver() != "postgres" {
-		return sql
-	}
-	parts := strings.Split(sql, "?")
-	l := len(parts)
-	for i, c := range parts {
-		if i < l-1 {
-			str += c + fmt.Sprintf("%s%v", "$", i+1)
-		}
-	}
-	str += parts[l-1]
-	return
+	return p
 }
 
 func (p Scope) hasTx() bool { return p.Tx != nil }

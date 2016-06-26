@@ -2,6 +2,9 @@ package orm
 
 import (
 	"database/sql"
+	"fmt"
+	"strings"
+	//	"encoding/json"
 	"log"
 
 	. "github.com/eynstudio/gobreak"
@@ -63,6 +66,9 @@ func (p *Orm) Count(data T) (int, error) {
 }
 
 func (p *Orm) All(data T) error { return NewScope(p).All(data).Err }
+func (p *Orm) AllJson(model T, lst *[][]byte) error {
+	return NewScope(p).AllJson(model, lst).Err
+}
 
 func (p *Orm) Query(data T, query string, args ...interface{}) error {
 	return NewScope(p).Query(data, query, args...).Err
@@ -84,6 +90,8 @@ func (p *Orm) One(data T) error    { return NewScope(p).One(data).Err }
 func (p *Orm) Insert(data T) error { return NewScope(p).Insert(data).Err }
 func (p *Orm) Update(data T) error { return NewScope(p).Update(data).Err }
 func (p *Orm) Save(data T) error   { return NewScope(p).Save(data).Err }
+
+func (p *Orm) SaveJson(id GUID, data T) error { return NewScope(p).SaveJson(id, data).Err }
 
 func (p *Orm) UpdateFields(data T, fields []string) error {
 	return NewScope(p).UpdateFields(data, fields).Err
@@ -111,8 +119,24 @@ func (p *Orm) Begin() (ts *TxScope) {
 }
 
 func (p *Orm) RawCount(query string, args ...interface{}) (count int64, err error) {
+	query = p.convParams(query)
 	log.Println(query)
-	err = p.db.QueryRow(query, args...).Scan(&count)
+	err = p.db.QueryRow(query, convertArgs2(args)...).Scan(&count)
+	return
+}
+
+func (p *Orm) convParams(sql string) (str string) {
+	if p.dialect.Driver() != "postgres" {
+		return sql
+	}
+	parts := strings.Split(sql, "?")
+	l := len(parts)
+	for i, c := range parts {
+		if i < l-1 {
+			str += c + fmt.Sprintf("%s%v", "$", i+1)
+		}
+	}
+	str += parts[l-1]
 	return
 }
 

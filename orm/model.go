@@ -3,7 +3,6 @@ package orm
 import (
 	"database/sql"
 	"reflect"
-	//	"time"
 
 	. "github.com/eynstudio/gobreak"
 )
