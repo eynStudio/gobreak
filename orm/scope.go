@@ -199,14 +199,14 @@ func (p *Scope) Save(model T) *Scope {
 func (p *Scope) SaveJson(id GUID, data T) *Scope {
 	p.checkModel(data)
 	buf, _ := json.Marshal(data)
-	//	v := Jsonb{Id: id.String(), Json: buf}
 	var sa db.SqlArgs
-	sa.Sql = fmt.Sprintf(`Insert into %v("Id","Json") values($1,$2)`, p.quote(p.model.Name))
+	sa.Sql = fmt.Sprintf(`Insert into %v("Id","Json") values($1,$2) ON CONFLICT ("Id") DO UPDATE SET ("Id","Json")=($1,$2)`, p.quote(p.model.Name))
 	sa.AddArgs(id, buf)
 	log.Println(sa.Sql)
 	p.exec(sa)
 	return p
 }
+
 func (p *Scope) Insert(model T) *Scope {
 	p.checkModel(model)
 	sa := p.buildInsert(model)
