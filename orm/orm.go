@@ -92,12 +92,13 @@ func (p *Orm) Update(data T) error { return NewScope(p).Update(data).Err }
 func (p *Orm) Save(data T) error   { return NewScope(p).Save(data).Err }
 func (p *Orm) Exec(sql string, args ...interface{}) error {
 	var sa db.SqlArgs
-	sa.Sql=sql
-	sa.Args=args
+	sa.Sql = sql
+	sa.Args = args
 	s := NewScope(p).exec(sa)
 	return s.Err
 }
 func (p *Orm) SaveJson(id GUID, data T) error { return NewScope(p).SaveJson(id, data).Err }
+func (p *Orm) GetJson(id GUID, data T) error  { return NewScope(p).GetJson(id, data).Err }
 
 func (p *Orm) UpdateFields(data T, fields []string) error {
 	return NewScope(p).UpdateFields(data, fields).Err

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"reflect"
 	"strings"
 
 	. "github.com/eynstudio/gobreak"
@@ -99,15 +100,17 @@ func (p *Scope) All(model T) *Scope {
 
 func (p *Scope) AllJson(model T, lst *[][]byte) *Scope {
 	p.checkModel(model)
+
 	//	w := p.buildWhere()
-	sql_ := fmt.Sprintf(`SELECT "Json" from %s `, p.quote(p.model.Name))
+
+	sql_ := fmt.Sprintf(`SELECT "Json" from %s `+p.wheresql, p.quote(p.model.Name))
+	log.Println(sql_)
 	var rows *sql.Rows
-	if rows, p.Err = p._query(sql_); p.NotErr() {
+	if rows, p.Err = p._query(sql_, p.whereargs...); p.NotErr() {
 		defer rows.Close()
 		for rows.Next() {
 			var v []byte
 			rows.Scan(&v)
-			json.Unmarshal(v, &model)
 			*lst = append(*lst, v)
 		}
 	}
@@ -204,6 +207,19 @@ func (p *Scope) SaveJson(id GUID, data T) *Scope {
 	sa.AddArgs(id, buf)
 	log.Println(sa.Sql)
 	p.exec(sa)
+	return p
+}
+
+func (p *Scope) GetJson(id GUID, data T) *Scope {
+	p.checkModel(data)
+	var sa db.SqlArgs
+	sa.AddArgs(id)
+	sql := fmt.Sprintf(`select "Json" from %v where "Id"=?`, p.quote(p.model.Name))
+	log.Println(sql)
+	row := p._queryRow(sql, convertArgs(sa)...)
+	var vv []byte
+	p.Err = row.Scan(&vv)
+	p.NoErrExec(func() { p.Err = json.Unmarshal(vv, &data) })
 	return p
 }
 
