@@ -66,8 +66,8 @@ func (p *Orm) Count(data T) (int, error) {
 }
 
 func (p *Orm) All(data T) error { return NewScope(p).All(data).Err }
-func (p *Orm) AllJson(model T, lst *[][]byte) error {
-	return NewScope(p).AllJson(model, lst).Err
+func (p *Orm) AllJson(lst T) error {
+	return NewScope(p).AllJson(lst).Err
 }
 
 func (p *Orm) Query(data T, query string, args ...interface{}) error {

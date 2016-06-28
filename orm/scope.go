@@ -98,10 +98,13 @@ func (p *Scope) All(model T) *Scope {
 	return p
 }
 
-func (p *Scope) AllJson(model T, lst *[][]byte) *Scope {
-	p.checkModel(model)
-
-	//	w := p.buildWhere()
+func (p *Scope) AllJson(lst T) *Scope {
+	p.checkModel(lst)
+	resultv := reflect.ValueOf(lst)
+	if resultv.Kind() != reflect.Ptr || resultv.Elem().Kind() != reflect.Slice {
+		panic("out argument must be a slice address")
+	}
+	slicev := resultv.Elem()
 
 	sql_ := fmt.Sprintf(`SELECT "Json" from %s `+p.wheresql, p.quote(p.model.Name))
 	log.Println(sql_)
@@ -111,8 +114,11 @@ func (p *Scope) AllJson(model T, lst *[][]byte) *Scope {
 		for rows.Next() {
 			var v []byte
 			rows.Scan(&v)
-			*lst = append(*lst, v)
+			obj := reflect.New(p.model.Type).Interface()
+			json.Unmarshal(v, obj)
+			slicev = reflect.Append(slicev, reflect.ValueOf(obj).Elem())
 		}
+		resultv.Elem().Set(slicev.Slice(0, slicev.Len()))
 	}
 	return p
 }
