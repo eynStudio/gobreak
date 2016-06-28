@@ -98,7 +98,13 @@ func (p *Orm) Exec(sql string, args ...interface{}) error {
 	return s.Err
 }
 func (p *Orm) SaveJson(id GUID, data T) error { return NewScope(p).SaveJson(id, data).Err }
-func (p *Orm) GetJson(id GUID, data T) error  { return NewScope(p).GetJson(id, data).Err }
+func (p *Orm) SaveJsonTo(name string, id GUID, data T) error {
+	return NewScope(p).SaveJsonTo(name, id, data).Err
+}
+func (p *Orm) GetJson(id GUID, data T) error { return NewScope(p).GetJson(id, data).Err }
+func (p *Orm) GetJsonFrom(name string, id GUID, data T) error {
+	return NewScope(p).GetJsonFrom(name, id, data).Err
+}
 
 func (p *Orm) UpdateFields(data T, fields []string) error {
 	return NewScope(p).UpdateFields(data, fields).Err

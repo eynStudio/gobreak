@@ -207,10 +207,17 @@ func (p *Scope) Save(model T) *Scope {
 
 func (p *Scope) SaveJson(id GUID, data T) *Scope {
 	p.checkModel(data)
+	return p.SaveJsonTo(p.model.Name, id, data)
+}
+
+func (p *Scope) SaveJsonTo(to string, id GUID, data T) *Scope {
 	buf, _ := json.Marshal(data)
+	var rm json.RawMessage
+	rm.UnmarshalJSON(buf)
+	buf2, _ := rm.MarshalJSON()
 	var sa db.SqlArgs
-	sa.Sql = fmt.Sprintf(`Insert into %v("Id","Json") values($1,$2) ON CONFLICT ("Id") DO UPDATE SET ("Id","Json")=($1,$2)`, p.quote(p.model.Name))
-	sa.AddArgs(id, buf)
+	sa.Sql = fmt.Sprintf(`Insert into %v("Id","Json") values($1,$2) ON CONFLICT ("Id") DO UPDATE SET ("Id","Json")=($1,$2)`, p.quote(to))
+	sa.AddArgs(id, buf2)
 	log.Println(sa.Sql)
 	p.exec(sa)
 	return p
@@ -218,9 +225,13 @@ func (p *Scope) SaveJson(id GUID, data T) *Scope {
 
 func (p *Scope) GetJson(id GUID, data T) *Scope {
 	p.checkModel(data)
+	return p.GetJsonFrom(p.model.Name, id, data)
+}
+
+func (p *Scope) GetJsonFrom(from string, id GUID, data T) *Scope {
 	var sa db.SqlArgs
 	sa.AddArgs(id)
-	sql := fmt.Sprintf(`select "Json" from %v where "Id"=?`, p.quote(p.model.Name))
+	sql := fmt.Sprintf(`select "Json" from %v where "Id"=?`, p.quote(from))
 	log.Println(sql)
 	row := p._queryRow(sql, convertArgs(sa)...)
 	var vv []byte
