@@ -3,6 +3,7 @@ package orm
 import (
 	"database/sql"
 	"encoding/json"
+	"log"
 	"reflect"
 	"strings"
 
@@ -180,16 +181,17 @@ func (p *model) MapRowsAsObj(rows *sql.Rows, out T) {
 }
 
 func (p *model) Obj2Map(data T) map[string]interface{} {
+	log.Println(data)
 	val := reflect.ValueOf(data)
 	m := make(map[string]interface{}, len(p.Fields))
 	for k, v := range p.Fields {
 		if v.IsJsonb() {
 			fv := val.Elem().FieldByName(k).Interface()
-			data, err := json.Marshal(fv)
+			xx, err := json.Marshal(fv)
 			if err != nil {
 				LogErr(err)
 			} else {
-				m[k] = data
+				m[k] = xx
 			}
 		} else {
 			m[k] = val.Elem().FieldByName(k).Interface()

@@ -119,7 +119,6 @@ func (p *Scope) AllJson(lst T) *Scope {
 	slicev := resultv.Elem()
 
 	sql_ := fmt.Sprintf(`SELECT "Json" from %s `+p.wheresql, p.quote(p.model.Name))
-	log.Println(sql_)
 	var rows *sql.Rows
 	if rows, p.Err = p._query(sql_, p.whereargs...); p.NotErr() {
 		defer rows.Close()
@@ -243,7 +242,6 @@ func (p *Scope) SaveJsonTo(to string, id GUID, data T) *Scope {
 	var sa db.SqlArgs
 	sa.Sql = fmt.Sprintf(`Insert into %v("Id","Json") values($1,$2) ON CONFLICT ("Id") DO UPDATE SET ("Id","Json")=($1,$2)`, p.quote(to))
 	sa.AddArgs(id, buf)
-	log.Println(sa.Sql)
 	p.exec(sa)
 	return p
 }
@@ -257,7 +255,6 @@ func (p *Scope) GetJsonFrom(from string, id GUID, data T) *Scope {
 	var sa db.SqlArgs
 	sa.AddArgs(id)
 	sql := fmt.Sprintf(`select "Json" from %v where "Id"=?`, p.quote(from))
-	log.Println(sql)
 	row := p._queryRow(sql, convertArgs(sa)...)
 	var vv []byte
 	p.Err = row.Scan(&vv)
