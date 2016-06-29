@@ -86,10 +86,11 @@ func (p *Orm) PageByOrder(model T, order string, pf *filter.PageFilter) (*db.Pag
 	return pp, s.Err
 }
 
-func (p *Orm) One(data T) error    { return NewScope(p).One(data).Err }
-func (p *Orm) Insert(data T) error { return NewScope(p).Insert(data).Err }
-func (p *Orm) Update(data T) error { return NewScope(p).Update(data).Err }
-func (p *Orm) Save(data T) error   { return NewScope(p).Save(data).Err }
+func (p *Orm) One(data T) error                 { return NewScope(p).One(data).Err }
+func (p *Orm) Insert(data T) error              { return NewScope(p).Insert(data).Err }
+func (p *Orm) Update(data T) error              { return NewScope(p).Update(data).Err }
+func (p *Orm) Save(data T) error                { return NewScope(p).Save(data).Err }
+func (p *Orm) SaveTo(name string, data T) error { return NewScope(p).SaveTo(name, data).Err }
 func (p *Orm) Exec(sql string, args ...interface{}) error {
 	var sa db.SqlArgs
 	sa.Sql = sql

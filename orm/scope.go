@@ -15,6 +15,7 @@ import (
 
 type Scope struct {
 	Error
+	tableName string
 	orm       *Orm
 	model     *model
 	haswhere  bool
@@ -31,6 +32,17 @@ type Scope struct {
 
 func NewScope(orm *Orm) *Scope { return &Scope{orm: orm} }
 
+func (p *Scope) quoteTableName() string {
+	if p.tableName != "" {
+		return p.quote(p.tableName)
+	}
+	return p.quote(p.model.Name)
+}
+
+func (p *Scope) Table(name string) *Scope {
+	p.tableName = name
+	return p
+}
 func (p *Scope) Where(sql string, args ...interface{}) *Scope {
 	p.haswhere = true
 	p.wheresql = sql
@@ -205,6 +217,22 @@ func (p *Scope) Save(model T) *Scope {
 	return p
 }
 
+func (p *Scope) SaveTo(name string, model T) *Scope {
+	p.tableName = name
+	p.checkModel(model)
+
+	if p.orm.dialect.Driver() == "postgres" {
+		return p.exec(p.buildUpsert(model))
+	}
+
+	if p.Has(model) {
+		p.Update(model)
+	} else {
+		p.Insert(model)
+	}
+	return p
+}
+
 func (p *Scope) SaveJson(id GUID, data T) *Scope {
 	p.checkModel(data)
 	return p.SaveJsonTo(p.model.Name, id, data)
@@ -340,11 +368,7 @@ func (p *Scope) buildInsert(obj T) (sa db.SqlArgs) {
 		params = append(params, "?")
 		sa.AddArgs(v)
 	}
-	sa.Sql = fmt.Sprintf("insert into %s (%v) values (%v)",
-		p.quote(p.model.Name),
-		strings.Join(cols, ","),
-		strings.Join(params, ","),
-	)
+	sa.Sql = fmt.Sprintf("insert into %s (%v) values (%v)", p.quoteTableName(), strings.Join(cols, ","), strings.Join(params, ","))
 	return
 }
 
@@ -362,7 +386,7 @@ func (p *Scope) buildUpsert(obj T) (sa db.SqlArgs) {
 	cc := strings.Join(cols, ",")
 	pp := strings.Join(params, ",")
 	sa.Sql = fmt.Sprintf(`insert into %s (%v) values (%v) ON CONFLICT ("Id") DO UPDATE SET (%v)=(%v)`,
-		p.quote(p.model.Name), cc, pp, cc, pp,
+		p.quoteTableName(), cc, pp, cc, pp,
 	)
 	return
 }
@@ -377,7 +401,7 @@ func (p *Scope) buildUpdate(obj T) (sa db.SqlArgs) {
 	}
 	sa.AddArgs(w.Args...)
 
-	sa.Sql = fmt.Sprintf("UPDATE %s SET %v %v", p.quote(p.model.Name), strings.Join(cols, ","), w.Sql)
+	sa.Sql = fmt.Sprintf("UPDATE %s SET %v %v", p.quoteTableName(), strings.Join(cols, ","), w.Sql)
 	return
 }
 
@@ -395,7 +419,7 @@ func (p *Scope) buildUpdateFields(obj T, fields []string) (sa db.SqlArgs) {
 	}
 	sa.AddArgs(w.Args...)
 
-	sa.Sql = fmt.Sprintf("UPDATE %s SET %v %v", p.quote(p.model.Name), strings.Join(cols, ","), w.Sql)
+	sa.Sql = fmt.Sprintf("UPDATE %s SET %v %v", p.quoteTableName(), strings.Join(cols, ","), w.Sql)
 	return
 }
 
