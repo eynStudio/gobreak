@@ -2,7 +2,9 @@ package orm
 
 import (
 	"database/sql"
+	"encoding/json"
 	"reflect"
+	"strings"
 
 	. "github.com/eynstudio/gobreak"
 )
@@ -17,6 +19,11 @@ type field struct {
 	Name  string
 	Type  reflect.Type
 	Field reflect.Value
+	reflect.StructField
+}
+
+func (p field) IsJsonb() bool {
+	return strings.Contains(p.StructField.Tag.Get("db"), "jsonb")
 }
 
 type model struct {
@@ -51,8 +58,8 @@ func getModelInfo(val interface{}) model {
 
 	mt := newModel(modeltype)
 	for i := 0; i < value.NumField(); i++ {
-		mt.Fields[modeltype.Field(i).Name] = field{modeltype.Field(i).Name, modeltype.Field(i).Type, value.Field(i)}
-
+		fs := modeltype.Field(i)
+		mt.Fields[fs.Name] = field{Name: fs.Name, Type: fs.Type, StructField: fs, Field: value.Field(i)}
 	}
 	models[modeltype] = mt
 	return mt
@@ -86,7 +93,10 @@ func (p *model) GetValuesForSqlRowScan(cols []string) []interface{} {
 
 	for index, column := range cols {
 		if field, ok := p.Fields[column]; ok {
-			if field.Field.Kind() == reflect.Ptr {
+			if field.IsJsonb() {
+				var vs []byte
+				values[index] = &vs
+			} else if field.Field.Kind() == reflect.Ptr {
 				values[index] = field.Field.Addr().Interface()
 			} else if field.Field.Kind() == reflect.String {
 				values[index] = reflect.New(reflect.PtrTo(reflect.TypeOf(""))).Interface()
@@ -113,7 +123,12 @@ func (p *model) MapObjFromRowValues(cols []string, values []interface{}) reflect
 	for index, column := range cols {
 		value := values[index]
 		if field, ok := p.Fields[column]; ok {
-			if field.Field.Kind() == reflect.Ptr {
+			if field.IsJsonb() {
+				xx := reflect.ValueOf(value).Elem().Interface().([]byte)
+				fieldobj := reflect.New(field.Type).Interface()
+				json.Unmarshal(xx, &fieldobj)
+				obj.FieldByName(column).Set(reflect.ValueOf(fieldobj).Elem())
+			} else if field.Field.Kind() == reflect.Ptr {
 				obj.FieldByName(column).Set(reflect.ValueOf(value).Elem())
 			} else if field.Field.Kind() == reflect.String {
 				if v := reflect.ValueOf(value).Elem().Elem(); v.IsValid() {
@@ -167,8 +182,18 @@ func (p *model) MapRowsAsObj(rows *sql.Rows, out T) {
 func (p *model) Obj2Map(data T) map[string]interface{} {
 	val := reflect.ValueOf(data)
 	m := make(map[string]interface{}, len(p.Fields))
-	for k := range p.Fields {
-		m[k] = val.Elem().FieldByName(k).Interface()
+	for k, v := range p.Fields {
+		if v.IsJsonb() {
+			fv := val.Elem().FieldByName(k).Interface()
+			data, err := json.Marshal(fv)
+			if err != nil {
+				LogErr(err)
+			} else {
+				m[k] = data
+			}
+		} else {
+			m[k] = val.Elem().FieldByName(k).Interface()
+		}
 	}
 	return m
 }

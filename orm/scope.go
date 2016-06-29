@@ -212,12 +212,9 @@ func (p *Scope) SaveJson(id GUID, data T) *Scope {
 
 func (p *Scope) SaveJsonTo(to string, id GUID, data T) *Scope {
 	buf, _ := json.Marshal(data)
-	var rm json.RawMessage
-	rm.UnmarshalJSON(buf)
-	buf2, _ := rm.MarshalJSON()
 	var sa db.SqlArgs
 	sa.Sql = fmt.Sprintf(`Insert into %v("Id","Json") values($1,$2) ON CONFLICT ("Id") DO UPDATE SET ("Id","Json")=($1,$2)`, p.quote(to))
-	sa.AddArgs(id, buf2)
+	sa.AddArgs(id, buf)
 	log.Println(sa.Sql)
 	p.exec(sa)
 	return p
