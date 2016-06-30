@@ -60,7 +60,7 @@ func (p *Scope) Count(model T) int {
 	p.checkModel(model)
 	id := p.model.Id()
 	w := p.buildWhere()
-	sql := fmt.Sprintf("SELECT COUNT(%v) from %s %v", p.quote(id), p.quote(p.model.Name), w.Sql)
+	sql := fmt.Sprintf("SELECT COUNT(%v) from %s %v", p.quote(id), p.quoteTableName(), w.Sql)
 	row := p._queryRow(sql, convertArgs(w)...)
 	count := 0
 	row.Scan(&count)
@@ -72,7 +72,7 @@ func (p *Scope) Has(model T) bool {
 	id := p.model.Id()
 	var sa db.SqlArgs
 	sa.AddArgs(p.model.IdVal(model))
-	sa.Sql = fmt.Sprintf("SELECT COUNT(%v) from %s WHERE %v=?", p.quote(id), p.quote(p.model.Name), p.quote(id))
+	sa.Sql = fmt.Sprintf("SELECT COUNT(%v) from %s WHERE %v=?", p.quote(id), p.quoteTableName(), p.quote(id))
 	row := p._queryRow(sa.Sql, convertArgs(sa)...)
 	count := 0
 	if err := row.Scan(&count); err != nil {
@@ -99,37 +99,13 @@ func (p *Scope) One(model T) *Scope {
 func (p *Scope) All(model T) *Scope {
 	p.checkModel(model)
 	w := p.buildWhere()
-	sql_ := fmt.Sprintf("SELECT * from %s %v", p.quote(p.model.Name), w.Sql)
+	sql_ := fmt.Sprintf("SELECT * from %s %v", p.quoteTableName(), w.Sql)
 	var rows *sql.Rows
 
 	if rows, p.Err = p._query(sql_, convertArgs(w)...); p.NotErr() {
 		defer rows.Close()
 
 		p.model.MapRowsAsLst(rows, model)
-	}
-	return p
-}
-
-func (p *Scope) AllJson(lst T) *Scope {
-	p.checkModel(lst)
-	resultv := reflect.ValueOf(lst)
-	if resultv.Kind() != reflect.Ptr || resultv.Elem().Kind() != reflect.Slice {
-		panic("out argument must be a slice address")
-	}
-	slicev := resultv.Elem()
-
-	sql_ := fmt.Sprintf(`SELECT "Json" from %s `+p.wheresql, p.quote(p.model.Name))
-	var rows *sql.Rows
-	if rows, p.Err = p._query(sql_, p.whereargs...); p.NotErr() {
-		defer rows.Close()
-		for rows.Next() {
-			var v []byte
-			rows.Scan(&v)
-			obj := reflect.New(p.model.Type).Interface()
-			json.Unmarshal(v, obj)
-			slicev = reflect.Append(slicev, reflect.ValueOf(obj).Elem())
-		}
-		resultv.Elem().Set(slicev.Slice(0, slicev.Len()))
 	}
 	return p
 }
@@ -159,7 +135,7 @@ func (p *Scope) Page(model T, pf *filter.PageFilter) *db.Paging {
 	p.Limit(pf.Skip(), pf.PerPage())
 	w := p.buildWhere()
 	psa := p.buildPage()
-	sql_ := fmt.Sprintf("SELECT * from %s %v %v", p.quote(p.model.Name), w.Sql, psa.Sql)
+	sql_ := fmt.Sprintf("SELECT * from %s %v %v", p.quoteTableName(), w.Sql, psa.Sql)
 	var rows *sql.Rows
 	log.Println(sql_, w.Args)
 	paging := &db.Paging{}
@@ -180,7 +156,7 @@ func (p *Scope) PageByOrder(model T, order string, pf *filter.PageFilter) *db.Pa
 	p.Limit(pf.Skip(), pf.PerPage())
 	w := p.buildWhere()
 	psa := p.buildPageByOrder(order)
-	sql_ := fmt.Sprintf("SELECT * from %s %v %v", p.quote(p.model.Name), w.Sql, psa.Sql)
+	sql_ := fmt.Sprintf("SELECT * from %s %v %v", p.quoteTableName(), w.Sql, psa.Sql)
 	var rows *sql.Rows
 	paging := &db.Paging{}
 	log.Println(sql_)
@@ -234,13 +210,9 @@ func (p *Scope) SaveTo(name string, model T) *Scope {
 
 func (p *Scope) SaveJson(id GUID, data T) *Scope {
 	p.checkModel(data)
-	return p.SaveJsonTo(p.model.Name, id, data)
-}
-
-func (p *Scope) SaveJsonTo(to string, id GUID, data T) *Scope {
 	buf, _ := json.Marshal(data)
 	var sa db.SqlArgs
-	sa.Sql = fmt.Sprintf(`Insert into %v("Id","Json") values($1,$2) ON CONFLICT ("Id") DO UPDATE SET ("Id","Json")=($1,$2)`, p.quote(to))
+	sa.Sql = fmt.Sprintf(`Insert into %v("Id","Json") values($1,$2) ON CONFLICT ("Id") DO UPDATE SET ("Id","Json")=($1,$2)`, p.quoteTableName())
 	sa.AddArgs(id, buf)
 	p.exec(sa)
 	return p
@@ -248,18 +220,70 @@ func (p *Scope) SaveJsonTo(to string, id GUID, data T) *Scope {
 
 func (p *Scope) GetJson(id GUID, data T) *Scope {
 	p.checkModel(data)
-	return p.GetJsonFrom(p.model.Name, id, data)
-}
 
-func (p *Scope) GetJsonFrom(from string, id GUID, data T) *Scope {
 	var sa db.SqlArgs
 	sa.AddArgs(id)
-	sql := fmt.Sprintf(`select "Json" from %v where "Id"=?`, p.quote(from))
+	sql := fmt.Sprintf(`select "Json" from %v where "Id"=?`, p.quoteTableName())
 	row := p._queryRow(sql, convertArgs(sa)...)
 	var vv []byte
 	p.Err = row.Scan(&vv)
 	p.NoErrExec(func() { p.Err = json.Unmarshal(vv, &data) })
 	return p
+}
+
+func (p *Scope) AllJson(lst T) *Scope {
+	p.checkModel(lst)
+	resultv := reflect.ValueOf(lst)
+	if resultv.Kind() != reflect.Ptr || resultv.Elem().Kind() != reflect.Slice {
+		panic("out argument must be a slice address")
+	}
+	slicev := resultv.Elem()
+
+	sql_ := fmt.Sprintf(`SELECT "Json" from %s `+p.wheresql, p.quoteTableName())
+	var rows *sql.Rows
+	if rows, p.Err = p._query(sql_, p.whereargs...); p.NotErr() {
+		defer rows.Close()
+		for rows.Next() {
+			var v []byte
+			rows.Scan(&v)
+			obj := reflect.New(p.model.Type).Interface()
+			json.Unmarshal(v, obj)
+			slicev = reflect.Append(slicev, reflect.ValueOf(obj).Elem())
+		}
+		resultv.Elem().Set(slicev.Slice(0, slicev.Len()))
+	}
+	return p
+}
+
+func (p *Scope) PageJson(lst T, page, perPage int) (pager db.Paging) {
+	p.checkModel(lst)
+	pf := filter.NewPageFilter(page, perPage)
+	p.Limit(pf.Skip(), perPage)
+	pager.Total = p.Count(lst)
+	log.Println(pager.Total)
+	resultv := reflect.ValueOf(lst)
+	if resultv.Kind() != reflect.Ptr || resultv.Elem().Kind() != reflect.Slice {
+		panic("out argument must be a slice address")
+	}
+	slicev := resultv.Elem()
+	wsa := p.buildWhere()
+	pas := p.buildPage()
+	sql_ := fmt.Sprintf(`SELECT "Json" from %s `+wsa.Sql+" "+pas.Sql, p.quoteTableName())
+	var rows *sql.Rows
+	if rows, p.Err = p._query(sql_, wsa.Args...); p.NotErr() {
+		defer rows.Close()
+		for rows.Next() {
+			var v []byte
+			rows.Scan(&v)
+			obj := reflect.New(p.model.Type).Interface()
+			json.Unmarshal(v, obj)
+			slicev = reflect.Append(slicev, reflect.ValueOf(obj).Elem())
+		}
+		resultv.Elem().Set(slicev.Slice(0, slicev.Len()))
+	}
+	pager.Items = lst
+	log.Println(lst)
+	return
 }
 
 func (p *Scope) Insert(model T) *Scope {
@@ -330,7 +354,10 @@ func (p *Scope) buildPage() (sa db.SqlArgs) {
 	if !p.hasLimit {
 		return
 	}
-	if p.orm.dialect.Driver() == "mysql" {
+	if p.orm.dialect.Driver() == "postgres" {
+		sa.Sql = fmt.Sprintf("limit %v offset %v", p.limit, p.offset)
+		log.Println(sa.Sql)
+	} else if p.orm.dialect.Driver() == "mysql" {
 		sa.Sql = fmt.Sprintf("limit %v,%v", p.offset, p.limit)
 	} else if p.orm.dialect.Driver() == "mssql" {
 		sa.Sql = fmt.Sprintf("ORDER BY %v OFFSET %v ROW FETCH NEXT %v ROWS only", p.model.Id(), p.offset, p.limit)
@@ -455,6 +482,7 @@ func (p Scope) IsNotFound() bool { return p.IsErr() && p.Err == db.DbNotFound }
 
 func (p *Scope) _query(query string, args ...interface{}) (*sql.Rows, error) {
 	query = p.orm.convParams(query)
+	log.Println(query,args)
 	if p.hasTx() {
 		return p.Tx.Query(query, args...)
 	}
@@ -463,6 +491,8 @@ func (p *Scope) _query(query string, args ...interface{}) (*sql.Rows, error) {
 
 func (p *Scope) _queryRow(query string, args ...interface{}) *sql.Row {
 	query = p.orm.convParams(query)
+	log.Println(query,args)
+
 	if p.hasTx() {
 		return p.Tx.QueryRow(query, args...)
 	}
