@@ -16,6 +16,18 @@ type Status struct {
 	Msg  string
 }
 
+func NewStatus() *Status { return &Status{} }
+func NewStatusErr(err error, ok_msg, err_msg string) IStatus {
+	return NewStatus().OkErrMsg(err, ok_msg, err_msg)
+}
+
+func (p *Status) OkErrMsg(err error, ok_msg, err_msg string) IStatus {
+	if err == nil {
+		return p.OkMsg(ok_msg)
+	}
+	return p.ErrMsg(err_msg)
+}
+
 func (p *Status) ErrMsg(msg string) IStatus { return p.SetStatus(1, msg) }
 func (p *Status) OkMsg(msg string) IStatus  { return p.SetStatus(0, msg) }
 func (p *Status) Ok() IStatus               { return p.SetStatus(0, "OK") }

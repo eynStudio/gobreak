@@ -172,12 +172,10 @@ func (p *model) MapRowsAsLst(rows *sql.Rows, out T) {
 func (p *model) MapRowsAsObj(rows *sql.Rows, out T) {
 	resultv := reflect.ValueOf(out)
 	cols, _ := rows.Columns()
-	if rows.Next() {
-		var values = p.GetValuesForSqlRowScan(cols)
-		rows.Scan(values...)
-		elem := p.MapObjFromRowValues(cols, values)
-		resultv.Elem().Set(elem)
-	}
+	var values = p.GetValuesForSqlRowScan(cols)
+	rows.Scan(values...)
+	elem := p.MapObjFromRowValues(cols, values)
+	resultv.Elem().Set(elem)
 }
 
 func (p *model) Obj2Map(data T) map[string]interface{} {

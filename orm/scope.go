@@ -34,10 +34,10 @@ type Scope struct {
 func NewScope(orm *Orm) *Scope { return &Scope{orm: orm} }
 
 func (p *Scope) getSelect() string { return "select " + IfThenStr(p._select == "", "*", p._select) }
-func (p *Scope) getFrom() string {
-	return "from " + p.quote(IfThenStr(p._from == "", p.model.Name, p._from))
+func (p *Scope) getFrom() string   { return "from " + p.getTblName() }
+func (p *Scope) getTblName() string {
+	return p.quote(IfThenStr(p._from == "", p.model.Name, p._from))
 }
-
 func (p *Scope) Select(s string) *Scope {
 	p._select = s
 	return p
@@ -63,28 +63,19 @@ func (p *Scope) WhereId(id interface{}) *Scope {
 
 func (p *Scope) Count(model T) int {
 	p.checkModel(model)
-	id := p.model.Id()
-	w := p.buildWhere()
-	sql := fmt.Sprintf("SELECT COUNT(%v) from %s %v", p.quote(id), p.getFrom(), w.Sql)
-	row := p._queryRow(sql, convertArgs(w)...)
+	var sa db.SqlArgs
+	sa.Sql += "select count(*) " + p.getFrom()
+	sa2 := p.buildWhere()
+	sa.Sql += sa2.Sql
+	sa.Args = sa2.Args
+	row := p._queryRow(sa.Sql, convertArgs(sa)...)
 	count := 0
 	row.Scan(&count)
 	return count
 }
 
 func (p *Scope) Has(model T) bool {
-	p.checkModel(model)
-	id := p.model.Id()
-	var sa db.SqlArgs
-	sa.AddArgs(p.model.IdVal(model))
-	sa.Sql = fmt.Sprintf("SELECT COUNT(%v) from %s WHERE %v=?", p.quote(id), p.getFrom(), p.quote(id))
-	row := p._queryRow(sa.Sql, convertArgs(sa)...)
-	count := 0
-	if err := row.Scan(&count); err != nil {
-		fmt.Println("Has:", sa.Sql)
-		fmt.Println(err)
-	}
-	return count > 0
+	return p.Count(model) > 0
 }
 
 func (p *Scope) One(model T) *Scope {
@@ -101,21 +92,26 @@ func (p *Scope) One(model T) *Scope {
 	return p
 }
 
-func (p *Scope) Get(model T) {
+func (p *Scope) Get(model T) bool {
 	p.checkModel(model)
 	sa := p.buildQuery()
 	var rows *sql.Rows
 	if rows, p.Err = p._query(sa.Sql, convertArgs(sa)...); p.IsErr() {
-		p.LogErr()
+		return false
 	}
 	defer rows.Close()
-	p.model.MapRowsAsObj(rows, model)
+	if rows.Next() {
+		p.model.MapRowsAsObj(rows, model)
+		return true
+	}
+	return false
 }
 
 func (p *Scope) buildQuery() (sa db.SqlArgs) {
 	sa.Sql += p.getSelect() + p.getFrom()
 	sa2 := p.buildWhere()
 	sa.Sql += sa2.Sql
+	sa.Args = sa2.Args
 	return
 }
 
@@ -235,7 +231,7 @@ func (p *Scope) SaveJson(id GUID, data T) *Scope {
 	p.checkModel(data)
 	buf, _ := json.Marshal(data)
 	var sa db.SqlArgs
-	sa.Sql = fmt.Sprintf(`Insert into %v("Id","Json") values($1,$2) ON CONFLICT ("Id") DO UPDATE SET ("Id","Json")=($1,$2)`, p.getFrom())
+	sa.Sql = fmt.Sprintf(`Insert into %v("Id","Json") values($1,$2) ON CONFLICT ("Id") DO UPDATE SET ("Id","Json")=($1,$2)`, p.getTblName())
 	sa.AddArgs(id, buf)
 	p.exec(sa)
 	return p
@@ -246,7 +242,7 @@ func (p *Scope) GetJson(id GUID, data T) *Scope {
 
 	var sa db.SqlArgs
 	sa.AddArgs(id)
-	sql := fmt.Sprintf(`select "Json" from %v where "Id"=?`, p.getFrom())
+	sql := fmt.Sprintf(`select "Json" %v where "Id"=?`, p.getFrom())
 	row := p._queryRow(sql, convertArgs(sa)...)
 	var vv []byte
 	p.Err = row.Scan(&vv)
@@ -262,7 +258,7 @@ func (p *Scope) AllJson(lst T) *Scope {
 	}
 	slicev := resultv.Elem()
 
-	sql_ := fmt.Sprintf(`SELECT "Json" from %s `+p.wheresql, p.getFrom())
+	sql_ := fmt.Sprintf(`SELECT "Json" %s where `+p.wheresql, p.getFrom())
 	var rows *sql.Rows
 	if rows, p.Err = p._query(sql_, p.whereargs...); p.NotErr() {
 		defer rows.Close()
