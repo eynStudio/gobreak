@@ -86,6 +86,10 @@ func (p *Orm) PageByOrder(model T, order string, pf *filter.PageFilter) (*db.Pag
 	return pp, s.Err
 }
 
+func (p *Orm) Select(str string) *Scope         { return NewScope(p).Select(str) }
+func (p *Orm) From(name string) *Scope          { return NewScope(p).From(name) }
+
+
 func (p *Orm) One(data T) error                 { return NewScope(p).One(data).Err }
 func (p *Orm) Insert(data T) error              { return NewScope(p).Insert(data).Err }
 func (p *Orm) Update(data T) error              { return NewScope(p).Update(data).Err }
@@ -100,11 +104,11 @@ func (p *Orm) Exec(sql string, args ...interface{}) error {
 }
 func (p *Orm) SaveJson(id GUID, data T) error { return NewScope(p).SaveJson(id, data).Err }
 func (p *Orm) SaveJsonTo(name string, id GUID, data T) error {
-	return NewScope(p).Table(name).SaveJson(id, data).Err
+	return NewScope(p).From(name).SaveJson(id, data).Err
 }
 func (p *Orm) GetJson(id GUID, data T) error { return NewScope(p).GetJson(id, data).Err }
 func (p *Orm) GetJsonFrom(name string, id GUID, data T) error {
-	return NewScope(p).Table(name).GetJson(id, data).Err
+	return NewScope(p).From(name).GetJson(id, data).Err
 }
 
 func (p *Orm) UpdateFields(data T, fields []string) error {

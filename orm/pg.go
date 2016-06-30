@@ -22,6 +22,6 @@ type Jsonb struct {
 
 func (p *pg) BulidTopNSql(s *Scope, n int) (sa db.SqlArgs) {
 	sa = s.buildWhere()
-	sa.Sql = fmt.Sprintf("SELECT * from %s %v limit %d", s.quoteTableName(), sa.Sql, n)
+	sa.Sql = fmt.Sprintf("SELECT * from %s %v limit %d", s.getFrom(), sa.Sql, n)
 	return
 }

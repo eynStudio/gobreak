@@ -14,8 +14,9 @@ import (
 )
 
 type Scope struct {
+	_select string
+	_from   string
 	Error
-	tableName string
 	orm       *Orm
 	model     *model
 	haswhere  bool
@@ -32,17 +33,21 @@ type Scope struct {
 
 func NewScope(orm *Orm) *Scope { return &Scope{orm: orm} }
 
-func (p *Scope) quoteTableName() string {
-	if p.tableName != "" {
-		return p.quote(p.tableName)
-	}
-	return p.quote(p.model.Name)
+func (p *Scope) getSelect() string { return "select " + IfThenStr(p._select == "", "*", p._select) }
+func (p *Scope) getFrom() string {
+	return "from " + p.quote(IfThenStr(p._from == "", p.model.Name, p._from))
 }
 
-func (p *Scope) Table(name string) *Scope {
-	p.tableName = name
+func (p *Scope) Select(s string) *Scope {
+	p._select = s
 	return p
 }
+
+func (p *Scope) From(name string) *Scope {
+	p._from = name
+	return p
+}
+
 func (p *Scope) Where(sql string, args ...interface{}) *Scope {
 	p.haswhere = true
 	p.wheresql = sql
@@ -60,7 +65,7 @@ func (p *Scope) Count(model T) int {
 	p.checkModel(model)
 	id := p.model.Id()
 	w := p.buildWhere()
-	sql := fmt.Sprintf("SELECT COUNT(%v) from %s %v", p.quote(id), p.quoteTableName(), w.Sql)
+	sql := fmt.Sprintf("SELECT COUNT(%v) from %s %v", p.quote(id), p.getFrom(), w.Sql)
 	row := p._queryRow(sql, convertArgs(w)...)
 	count := 0
 	row.Scan(&count)
@@ -72,7 +77,7 @@ func (p *Scope) Has(model T) bool {
 	id := p.model.Id()
 	var sa db.SqlArgs
 	sa.AddArgs(p.model.IdVal(model))
-	sa.Sql = fmt.Sprintf("SELECT COUNT(%v) from %s WHERE %v=?", p.quote(id), p.quoteTableName(), p.quote(id))
+	sa.Sql = fmt.Sprintf("SELECT COUNT(%v) from %s WHERE %v=?", p.quote(id), p.getFrom(), p.quote(id))
 	row := p._queryRow(sa.Sql, convertArgs(sa)...)
 	count := 0
 	if err := row.Scan(&count); err != nil {
@@ -96,10 +101,28 @@ func (p *Scope) One(model T) *Scope {
 	return p
 }
 
+func (p *Scope) Get(model T) {
+	p.checkModel(model)
+	sa := p.buildQuery()
+	var rows *sql.Rows
+	if rows, p.Err = p._query(sa.Sql, convertArgs(sa)...); p.IsErr() {
+		p.LogErr()
+	}
+	defer rows.Close()
+	p.model.MapRowsAsObj(rows, model)
+}
+
+func (p *Scope) buildQuery() (sa db.SqlArgs) {
+	sa.Sql += p.getSelect() + p.getFrom()
+	sa2 := p.buildWhere()
+	sa.Sql += sa2.Sql
+	return
+}
+
 func (p *Scope) All(model T) *Scope {
 	p.checkModel(model)
 	w := p.buildWhere()
-	sql_ := fmt.Sprintf("SELECT * from %s %v", p.quoteTableName(), w.Sql)
+	sql_ := fmt.Sprintf("SELECT * from %s %v", p.getFrom(), w.Sql)
 	var rows *sql.Rows
 
 	if rows, p.Err = p._query(sql_, convertArgs(w)...); p.NotErr() {
@@ -135,7 +158,7 @@ func (p *Scope) Page(model T, pf *filter.PageFilter) *db.Paging {
 	p.Limit(pf.Skip(), pf.PerPage())
 	w := p.buildWhere()
 	psa := p.buildPage()
-	sql_ := fmt.Sprintf("SELECT * from %s %v %v", p.quoteTableName(), w.Sql, psa.Sql)
+	sql_ := fmt.Sprintf("SELECT * from %s %v %v", p.getFrom(), w.Sql, psa.Sql)
 	var rows *sql.Rows
 	log.Println(sql_, w.Args)
 	paging := &db.Paging{}
@@ -156,7 +179,7 @@ func (p *Scope) PageByOrder(model T, order string, pf *filter.PageFilter) *db.Pa
 	p.Limit(pf.Skip(), pf.PerPage())
 	w := p.buildWhere()
 	psa := p.buildPageByOrder(order)
-	sql_ := fmt.Sprintf("SELECT * from %s %v %v", p.quoteTableName(), w.Sql, psa.Sql)
+	sql_ := fmt.Sprintf("SELECT * from %s %v %v", p.getFrom(), w.Sql, psa.Sql)
 	var rows *sql.Rows
 	paging := &db.Paging{}
 	log.Println(sql_)
@@ -193,7 +216,7 @@ func (p *Scope) Save(model T) *Scope {
 }
 
 func (p *Scope) SaveTo(name string, model T) *Scope {
-	p.tableName = name
+	p._from = name
 	p.checkModel(model)
 
 	if p.orm.dialect.Driver() == "postgres" {
@@ -212,7 +235,7 @@ func (p *Scope) SaveJson(id GUID, data T) *Scope {
 	p.checkModel(data)
 	buf, _ := json.Marshal(data)
 	var sa db.SqlArgs
-	sa.Sql = fmt.Sprintf(`Insert into %v("Id","Json") values($1,$2) ON CONFLICT ("Id") DO UPDATE SET ("Id","Json")=($1,$2)`, p.quoteTableName())
+	sa.Sql = fmt.Sprintf(`Insert into %v("Id","Json") values($1,$2) ON CONFLICT ("Id") DO UPDATE SET ("Id","Json")=($1,$2)`, p.getFrom())
 	sa.AddArgs(id, buf)
 	p.exec(sa)
 	return p
@@ -223,7 +246,7 @@ func (p *Scope) GetJson(id GUID, data T) *Scope {
 
 	var sa db.SqlArgs
 	sa.AddArgs(id)
-	sql := fmt.Sprintf(`select "Json" from %v where "Id"=?`, p.quoteTableName())
+	sql := fmt.Sprintf(`select "Json" from %v where "Id"=?`, p.getFrom())
 	row := p._queryRow(sql, convertArgs(sa)...)
 	var vv []byte
 	p.Err = row.Scan(&vv)
@@ -239,7 +262,7 @@ func (p *Scope) AllJson(lst T) *Scope {
 	}
 	slicev := resultv.Elem()
 
-	sql_ := fmt.Sprintf(`SELECT "Json" from %s `+p.wheresql, p.quoteTableName())
+	sql_ := fmt.Sprintf(`SELECT "Json" from %s `+p.wheresql, p.getFrom())
 	var rows *sql.Rows
 	if rows, p.Err = p._query(sql_, p.whereargs...); p.NotErr() {
 		defer rows.Close()
@@ -268,7 +291,7 @@ func (p *Scope) PageJson(lst T, page, perPage int) (pager db.Paging) {
 	slicev := resultv.Elem()
 	wsa := p.buildWhere()
 	pas := p.buildPage()
-	sql_ := fmt.Sprintf(`SELECT "Json" from %s `+wsa.Sql+" "+pas.Sql, p.quoteTableName())
+	sql_ := fmt.Sprintf(`SELECT "Json" from %s `+wsa.Sql+" "+pas.Sql, p.getFrom())
 	var rows *sql.Rows
 	if rows, p.Err = p._query(sql_, wsa.Args...); p.NotErr() {
 		defer rows.Close()
@@ -392,7 +415,7 @@ func (p *Scope) buildInsert(obj T) (sa db.SqlArgs) {
 		params = append(params, "?")
 		sa.AddArgs(v)
 	}
-	sa.Sql = fmt.Sprintf("insert into %s (%v) values (%v)", p.quoteTableName(), strings.Join(cols, ","), strings.Join(params, ","))
+	sa.Sql = fmt.Sprintf("insert into %s (%v) values (%v)", p.getFrom(), strings.Join(cols, ","), strings.Join(params, ","))
 	return
 }
 
@@ -410,7 +433,7 @@ func (p *Scope) buildUpsert(obj T) (sa db.SqlArgs) {
 	cc := strings.Join(cols, ",")
 	pp := strings.Join(params, ",")
 	sa.Sql = fmt.Sprintf(`insert into %s (%v) values (%v) ON CONFLICT ("Id") DO UPDATE SET (%v)=(%v)`,
-		p.quoteTableName(), cc, pp, cc, pp,
+		p.getFrom(), cc, pp, cc, pp,
 	)
 	return
 }
@@ -425,7 +448,7 @@ func (p *Scope) buildUpdate(obj T) (sa db.SqlArgs) {
 	}
 	sa.AddArgs(w.Args...)
 
-	sa.Sql = fmt.Sprintf("UPDATE %s SET %v %v", p.quoteTableName(), strings.Join(cols, ","), w.Sql)
+	sa.Sql = fmt.Sprintf("UPDATE %s SET %v %v", p.getFrom(), strings.Join(cols, ","), w.Sql)
 	return
 }
 
@@ -443,7 +466,7 @@ func (p *Scope) buildUpdateFields(obj T, fields []string) (sa db.SqlArgs) {
 	}
 	sa.AddArgs(w.Args...)
 
-	sa.Sql = fmt.Sprintf("UPDATE %s SET %v %v", p.quoteTableName(), strings.Join(cols, ","), w.Sql)
+	sa.Sql = fmt.Sprintf("UPDATE %s SET %v %v", p.getFrom(), strings.Join(cols, ","), w.Sql)
 	return
 }
 
@@ -482,7 +505,7 @@ func (p Scope) IsNotFound() bool { return p.IsErr() && p.Err == db.DbNotFound }
 
 func (p *Scope) _query(query string, args ...interface{}) (*sql.Rows, error) {
 	query = p.orm.convParams(query)
-	log.Println(query,args)
+	log.Println(query, args)
 	if p.hasTx() {
 		return p.Tx.Query(query, args...)
 	}
@@ -491,7 +514,7 @@ func (p *Scope) _query(query string, args ...interface{}) (*sql.Rows, error) {
 
 func (p *Scope) _queryRow(query string, args ...interface{}) *sql.Row {
 	query = p.orm.convParams(query)
-	log.Println(query,args)
+	log.Println(query, args)
 
 	if p.hasTx() {
 		return p.Tx.QueryRow(query, args...)
