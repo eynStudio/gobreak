@@ -67,6 +67,7 @@ func getModelInfo(val interface{}) model {
 }
 
 func (p *model) Id() string {
+	log.Println(*p)
 	if len(p.IdName) > 0 {
 		return p.IdName
 	}

@@ -34,7 +34,7 @@ type Scope struct {
 func NewScope(orm *Orm) *Scope { return &Scope{orm: orm} }
 
 func (p *Scope) getSelect() string { return "select " + IfThenStr(p._select == "", "*", p._select) }
-func (p *Scope) getFrom() string   { return "from " + p.getTblName() }
+func (p *Scope) getFrom() string   { return " from " + p.getTblName() }
 func (p *Scope) getTblName() string {
 	return p.quote(IfThenStr(p._from == "", p.model.Name, p._from))
 }
@@ -78,19 +78,19 @@ func (p *Scope) Has(model T) bool {
 	return p.Count(model) > 0
 }
 
-func (p *Scope) One(model T) *Scope {
-	p.checkModel(model)
-	sa := p.orm.dialect.BulidTopNSql(p, 1)
-	var rows *sql.Rows
-	if rows, p.Err = p._query(sa.Sql, convertArgs(sa)...); p.IsErr() {
-		p.LogErr()
-		return p
-	}
-	defer rows.Close()
+//func (p *Scope) One(model T) *Scope {
+//	p.checkModel(model)
+//	sa := p.orm.dialect.BulidTopNSql(p, 1)
+//	var rows *sql.Rows
+//	if rows, p.Err = p._query(sa.Sql, convertArgs(sa)...); p.IsErr() {
+//		p.LogErr()
+//		return p
+//	}
+//	defer rows.Close()
 
-	p.model.MapRowsAsObj(rows, model)
-	return p
-}
+//	p.model.MapRowsAsObj(rows, model)
+//	return p
+//}
 
 func (p *Scope) Get(model T) bool {
 	p.checkModel(model)
@@ -117,13 +117,13 @@ func (p *Scope) buildQuery() (sa db.SqlArgs) {
 
 func (p *Scope) All(model T) *Scope {
 	p.checkModel(model)
-	w := p.buildWhere()
-	sql_ := fmt.Sprintf("SELECT * from %s %v", p.getFrom(), w.Sql)
+//	w := p.buildWhere()
+//	sql_ := fmt.Sprintf("SELECT * %s %v", p.getFrom(), w.Sql)
+	
+	sa:=p.buildQuery()	
 	var rows *sql.Rows
-
-	if rows, p.Err = p._query(sql_, convertArgs(w)...); p.NotErr() {
+	if rows, p.Err = p._query(sa.Sql, convertArgs(sa)...); p.NotErr() {
 		defer rows.Close()
-
 		p.model.MapRowsAsLst(rows, model)
 	}
 	return p
@@ -154,7 +154,7 @@ func (p *Scope) Page(model T, pf *filter.PageFilter) *db.Paging {
 	p.Limit(pf.Skip(), pf.PerPage())
 	w := p.buildWhere()
 	psa := p.buildPage()
-	sql_ := fmt.Sprintf("SELECT * from %s %v %v", p.getFrom(), w.Sql, psa.Sql)
+	sql_ := fmt.Sprintf("SELECT * %s %v %v", p.getFrom(), w.Sql, psa.Sql)
 	var rows *sql.Rows
 	log.Println(sql_, w.Args)
 	paging := &db.Paging{}
@@ -175,7 +175,7 @@ func (p *Scope) PageByOrder(model T, order string, pf *filter.PageFilter) *db.Pa
 	p.Limit(pf.Skip(), pf.PerPage())
 	w := p.buildWhere()
 	psa := p.buildPageByOrder(order)
-	sql_ := fmt.Sprintf("SELECT * from %s %v %v", p.getFrom(), w.Sql, psa.Sql)
+	sql_ := fmt.Sprintf("SELECT * %s %v %v", p.getFrom(), w.Sql, psa.Sql)
 	var rows *sql.Rows
 	paging := &db.Paging{}
 	log.Println(sql_)
@@ -239,15 +239,12 @@ func (p *Scope) SaveJson(id GUID, data T) *Scope {
 
 func (p *Scope) GetJson(data T) bool {
 	p.checkModel(data)
-
-	//	var sa db.SqlArgs
-	//	sa.AddArgs(id)
-	//	sql := fmt.Sprintf(`select "Json" %v where "Id"=?`, p.getFrom())
 	p.Select(`"Json"`)
 	sa := p.buildQuery()
 	log.Println(sa.Sql, sa.Args)
 	rows, err := p._query(sa.Sql, convertArgs(sa)...)
 	if p.Err = err; p.IsErr() {
+		log.Println(p.Err)
 		return false
 	}
 	defer rows.Close()
@@ -299,7 +296,7 @@ func (p *Scope) PageJson(lst T, page, perPage int) (pager db.Paging) {
 	slicev := resultv.Elem()
 	wsa := p.buildWhere()
 	pas := p.buildPage()
-	sql_ := fmt.Sprintf(`SELECT "Json" from %s `+wsa.Sql+" "+pas.Sql, p.getFrom())
+	sql_ := fmt.Sprintf(`SELECT "Json" %s `+wsa.Sql+" "+pas.Sql, p.getFrom())
 	var rows *sql.Rows
 	if rows, p.Err = p._query(sql_, wsa.Args...); p.NotErr() {
 		defer rows.Close()
@@ -361,17 +358,17 @@ func (p *Scope) buildWhere() (sa db.SqlArgs) {
 	if !p.haswhere {
 		return
 	} else if p.whereid != nil {
-		sa.Sql = fmt.Sprintf("WHERE (%v=?)", p.quote(p.model.Id()))
+		sa.Sql = fmt.Sprintf(" WHERE (%v=?)", p.quote(p.model.Id()))
 		sa.AddArgs(p.whereid)
 	} else if len(p.wheresql) > 0 {
-		sa.Sql = "WHERE " + p.wheresql
+		sa.Sql = " WHERE " + p.wheresql
 		sa.AddArgs(p.whereargs...)
 	} else if p.pf != nil {
 		visitor := filter.Visitor{}
 		visitor.Quote = p.orm.dialect.Quote
 		sa = visitor.Visitor(p.pf.Group)
 		if sa.Sql != "" {
-			sa.Sql = "WHERE " + sa.Sql
+			sa.Sql = " WHERE " + sa.Sql
 		}
 		return
 	} else if len(p.where) > 0 {

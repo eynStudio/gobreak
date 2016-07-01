@@ -90,7 +90,7 @@ func (p *Orm) Select(str string) *Scope         { return NewScope(p).Select(str)
 func (p *Orm) From(name string) *Scope          { return NewScope(p).From(name) }
 
 
-func (p *Orm) One(data T) error                 { return NewScope(p).One(data).Err }
+//func (p *Orm) One(data T) error                 { return NewScope(p).One(data).Err }
 func (p *Orm) Insert(data T) error              { return NewScope(p).Insert(data).Err }
 func (p *Orm) Update(data T) error              { return NewScope(p).Update(data).Err }
 func (p *Orm) Save(data T) error                { return NewScope(p).Save(data).Err }
