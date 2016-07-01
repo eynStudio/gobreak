@@ -106,10 +106,10 @@ func (p *Orm) SaveJson(id GUID, data T) error { return NewScope(p).SaveJson(id, 
 func (p *Orm) SaveJsonTo(name string, id GUID, data T) error {
 	return NewScope(p).From(name).SaveJson(id, data).Err
 }
-func (p *Orm) GetJson(id GUID, data T) error { return NewScope(p).GetJson(id, data).Err }
-func (p *Orm) GetJsonFrom(name string, id GUID, data T) error {
-	return NewScope(p).From(name).GetJson(id, data).Err
-}
+//func (p *Orm) GetJson(id GUID, data T) error { return NewScope(p).GetJson(data).Err }
+//func (p *Orm) GetJsonFrom(name string, id GUID, data T) error {
+//	return NewScope(p).From(name).GetJson(id, data).Err
+//}
 
 func (p *Orm) UpdateFields(data T, fields []string) error {
 	return NewScope(p).UpdateFields(data, fields).Err

@@ -237,17 +237,29 @@ func (p *Scope) SaveJson(id GUID, data T) *Scope {
 	return p
 }
 
-func (p *Scope) GetJson(id GUID, data T) *Scope {
+func (p *Scope) GetJson(data T) bool {
 	p.checkModel(data)
 
-	var sa db.SqlArgs
-	sa.AddArgs(id)
-	sql := fmt.Sprintf(`select "Json" %v where "Id"=?`, p.getFrom())
-	row := p._queryRow(sql, convertArgs(sa)...)
+	//	var sa db.SqlArgs
+	//	sa.AddArgs(id)
+	//	sql := fmt.Sprintf(`select "Json" %v where "Id"=?`, p.getFrom())
+	p.Select(`"Json"`)
+	sa := p.buildQuery()
+	log.Println(sa.Sql, sa.Args)
+	rows, err := p._query(sa.Sql, convertArgs(sa)...)
+	if p.Err = err; p.IsErr() {
+		return false
+	}
+	defer rows.Close()
+
+	if !rows.Next() {
+		return false
+	}
+
 	var vv []byte
-	p.Err = row.Scan(&vv)
+	p.Err = rows.Scan(&vv)
 	p.NoErrExec(func() { p.Err = json.Unmarshal(vv, &data) })
-	return p
+	return true
 }
 
 func (p *Scope) AllJson(lst T) *Scope {
