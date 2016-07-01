@@ -117,10 +117,10 @@ func (p *Scope) buildQuery() (sa db.SqlArgs) {
 
 func (p *Scope) All(model T) *Scope {
 	p.checkModel(model)
-//	w := p.buildWhere()
-//	sql_ := fmt.Sprintf("SELECT * %s %v", p.getFrom(), w.Sql)
-	
-	sa:=p.buildQuery()	
+	//	w := p.buildWhere()
+	//	sql_ := fmt.Sprintf("SELECT * %s %v", p.getFrom(), w.Sql)
+
+	sa := p.buildQuery()
 	var rows *sql.Rows
 	if rows, p.Err = p._query(sa.Sql, convertArgs(sa)...); p.NotErr() {
 		defer rows.Close()
@@ -198,6 +198,7 @@ func (p *Scope) PageSql(model T, pf filter.PageFilter, sql string) *db.Paging {
 }
 func (p *Scope) Save(model T) *Scope {
 	p.checkModel(model)
+	p.setWhereIdIfNoWhere(model)
 
 	if p.orm.dialect.Driver() == "postgres" {
 		return p.exec(p.buildUpsert(model))
@@ -420,7 +421,7 @@ func (p *Scope) buildInsert(obj T) (sa db.SqlArgs) {
 		params = append(params, "?")
 		sa.AddArgs(v)
 	}
-	sa.Sql = fmt.Sprintf("insert into %s (%v) values (%v)", p.getFrom(), strings.Join(cols, ","), strings.Join(params, ","))
+	sa.Sql = fmt.Sprintf("insert into %s (%v) values (%v)", p.getTblName(), strings.Join(cols, ","), strings.Join(params, ","))
 	return
 }
 
@@ -438,7 +439,7 @@ func (p *Scope) buildUpsert(obj T) (sa db.SqlArgs) {
 	cc := strings.Join(cols, ",")
 	pp := strings.Join(params, ",")
 	sa.Sql = fmt.Sprintf(`insert into %s (%v) values (%v) ON CONFLICT ("Id") DO UPDATE SET (%v)=(%v)`,
-		p.getFrom(), cc, pp, cc, pp,
+		p.getTblName(), cc, pp, cc, pp,
 	)
 	return
 }
@@ -453,7 +454,7 @@ func (p *Scope) buildUpdate(obj T) (sa db.SqlArgs) {
 	}
 	sa.AddArgs(w.Args...)
 
-	sa.Sql = fmt.Sprintf("UPDATE %s SET %v %v", p.getFrom(), strings.Join(cols, ","), w.Sql)
+	sa.Sql = fmt.Sprintf("UPDATE %s SET %v %v", p.getTblName(), strings.Join(cols, ","), w.Sql)
 	return
 }
 
@@ -471,7 +472,7 @@ func (p *Scope) buildUpdateFields(obj T, fields []string) (sa db.SqlArgs) {
 	}
 	sa.AddArgs(w.Args...)
 
-	sa.Sql = fmt.Sprintf("UPDATE %s SET %v %v", p.getFrom(), strings.Join(cols, ","), w.Sql)
+	sa.Sql = fmt.Sprintf("UPDATE %s SET %v %v", p.getTblName(), strings.Join(cols, ","), w.Sql)
 	return
 }
 
@@ -530,6 +531,8 @@ func (p *Scope) _queryRow(query string, args ...interface{}) *sql.Row {
 func (p *Scope) exec(sa db.SqlArgs) *Scope {
 	params := convertArgs(sa)
 	query := p.orm.convParams(sa.Sql)
+	log.Println(query, params)
+
 	if p.hasTx() {
 		_, p.Err = p.Tx.Exec(query, params...)
 
