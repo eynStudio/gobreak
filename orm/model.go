@@ -3,7 +3,6 @@ package orm
 import (
 	"database/sql"
 	"encoding/json"
-	"log"
 	"reflect"
 	"strings"
 
@@ -67,7 +66,6 @@ func getModelInfo(val interface{}) model {
 }
 
 func (p *model) Id() string {
-	log.Println(*p)
 	if len(p.IdName) > 0 {
 		return p.IdName
 	}
@@ -180,7 +178,6 @@ func (p *model) MapRowsAsObj(rows *sql.Rows, out T) {
 }
 
 func (p *model) Obj2Map(data T) map[string]interface{} {
-	log.Println(data)
 	val := reflect.ValueOf(data)
 	m := make(map[string]interface{}, len(p.Fields))
 	for k, v := range p.Fields {

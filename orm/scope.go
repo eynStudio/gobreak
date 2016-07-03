@@ -36,7 +36,11 @@ func NewScope(orm *Orm) *Scope { return &Scope{orm: orm} }
 func (p *Scope) getSelect() string { return "select " + IfThenStr(p._select == "", "*", p._select) }
 func (p *Scope) getFrom() string   { return " from " + p.getTblName() }
 func (p *Scope) getTblName() string {
-	return p.quote(IfThenStr(p._from == "", p.model.Name, p._from))
+	if p._from != "" {
+		return p.quote(p._from)
+	}
+	return p.quote(p.model.Name)
+	//		return p.quote(IfThenStr(p._from == "", p.model.Name, p._from))
 }
 func (p *Scope) Select(s string) *Scope {
 	p._select = s
@@ -242,7 +246,6 @@ func (p *Scope) GetJson(data T) bool {
 	p.checkModel(data)
 	p.Select(`"Json"`)
 	sa := p.buildQuery()
-	log.Println(sa.Sql, sa.Args)
 	rows, err := p._query(sa.Sql, convertArgs(sa)...)
 	if p.Err = err; p.IsErr() {
 		log.Println(p.Err)
@@ -478,7 +481,7 @@ func (p *Scope) buildUpdateFields(obj T, fields []string) (sa db.SqlArgs) {
 
 func (p *Scope) quote(str string) string { return p.orm.dialect.Quote(str) }
 func (p *Scope) checkModel(model T) {
-	if p.model == nil {
+	if p.model == nil && model != nil {
 		m := getModelInfo(model)
 		p.model = &m
 	}
@@ -511,7 +514,7 @@ func (p Scope) IsNotFound() bool { return p.IsErr() && p.Err == db.DbNotFound }
 
 func (p *Scope) _query(query string, args ...interface{}) (*sql.Rows, error) {
 	query = p.orm.convParams(query)
-	log.Println(query, args)
+	//	log.Println(query, args)
 	if p.hasTx() {
 		return p.Tx.Query(query, args...)
 	}
@@ -520,7 +523,7 @@ func (p *Scope) _query(query string, args ...interface{}) (*sql.Rows, error) {
 
 func (p *Scope) _queryRow(query string, args ...interface{}) *sql.Row {
 	query = p.orm.convParams(query)
-	log.Println(query, args)
+	//	log.Println(query, args)
 
 	if p.hasTx() {
 		return p.Tx.QueryRow(query, args...)
@@ -531,7 +534,7 @@ func (p *Scope) _queryRow(query string, args ...interface{}) *sql.Row {
 func (p *Scope) exec(sa db.SqlArgs) *Scope {
 	params := convertArgs(sa)
 	query := p.orm.convParams(sa.Sql)
-	log.Println(query, params)
+	//	log.Println(query, params)
 
 	if p.hasTx() {
 		_, p.Err = p.Tx.Exec(query, params...)
