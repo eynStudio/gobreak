@@ -3,9 +3,8 @@ package orm
 import (
 	"database/sql"
 	"fmt"
-	"strings"
-	//	"encoding/json"
 	"log"
+	"strings"
 
 	. "github.com/eynstudio/gobreak"
 	"github.com/eynstudio/gobreak/db"
@@ -16,15 +15,15 @@ import (
 type Orm struct {
 	db      *sql.DB
 	dialect Dialect
+	mapper  func(string) string
+	models  *models
 }
 
 func Open(driver, source string) (*Orm, error) {
 	var err error
 
-	orm := &Orm{
-		dialect: NewDialect(driver),
-	}
-
+	orm := &Orm{dialect: NewDialect(driver)}
+	orm.models = newModels(orm)
 	orm.db, err = sql.Open(driver, source)
 
 	if err == nil {
@@ -38,7 +37,10 @@ func MustOpen(driver, source string) *Orm {
 	Must(e)
 	return o
 }
-
+func (p *Orm) SetMapper(f func(string) string) *Orm {
+	p.mapper = f
+	return p
+}
 func (p *Orm) DB() *sql.DB            { return p.db }
 func (p *Orm) LoadMeta() *meta.MetaDb { return p.dialect.LoadMeta(p.db) }
 
@@ -86,9 +88,8 @@ func (p *Orm) PageByOrder(model T, order string, pf *filter.PageFilter) (*db.Pag
 	return pp, s.Err
 }
 
-func (p *Orm) Select(str string) *Scope         { return NewScope(p).Select(str) }
-func (p *Orm) From(name string) *Scope          { return NewScope(p).From(name) }
-
+func (p *Orm) Select(str string) *Scope { return NewScope(p).Select(str) }
+func (p *Orm) From(name string) *Scope  { return NewScope(p).From(name) }
 
 //func (p *Orm) One(data T) error                 { return NewScope(p).One(data).Err }
 func (p *Orm) Insert(data T) error              { return NewScope(p).Insert(data).Err }
@@ -106,6 +107,7 @@ func (p *Orm) SaveJson(id GUID, data T) error { return NewScope(p).SaveJson(id, 
 func (p *Orm) SaveJsonTo(name string, id GUID, data T) error {
 	return NewScope(p).From(name).SaveJson(id, data).Err
 }
+
 //func (p *Orm) GetJson(id GUID, data T) error { return NewScope(p).GetJson(data).Err }
 //func (p *Orm) GetJsonFrom(name string, id GUID, data T) error {
 //	return NewScope(p).From(name).GetJson(id, data).Err
@@ -116,15 +118,15 @@ func (p *Orm) UpdateFields(data T, fields []string) error {
 }
 
 //!! this must use Tx !!
-func (p *Orm) SaveAs(dest T, src ...T) error {
-	s := NewScope(p)
-	for _, m := range src {
-		s.NoErrExec(func() {
-			s.Save(Map(dest, m))
-		})
-	}
-	return s.Err
-}
+//func (p *Orm) SaveAs(dest T, src ...T) error {
+//	s := NewScope(p)
+//	for _, m := range src {
+//		s.NoErrExec(func() {
+//			s.Save(Ext(dest, m))
+//		})
+//	}
+//	return s.Err
+//}
 
 func (p *Orm) Del(data T) error                   { return NewScope(p).Del(data).Err }
 func (p *Orm) DelAll(data T) error                { return NewScope(p).DelAll(data).Err }

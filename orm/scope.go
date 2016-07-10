@@ -482,8 +482,7 @@ func (p *Scope) buildUpdateFields(obj T, fields []string) (sa db.SqlArgs) {
 func (p *Scope) quote(str string) string { return p.orm.dialect.Quote(str) }
 func (p *Scope) checkModel(model T) {
 	if p.model == nil && model != nil {
-		m := getModelInfo(model)
-		p.model = &m
+		p.model = p.orm.models.get(model)
 	}
 }
 func (p *Scope) setWhereIdIfNoWhere(model T) {

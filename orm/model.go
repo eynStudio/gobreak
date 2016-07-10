@@ -13,7 +13,7 @@ const (
 	timeFormate = "2006-01-02 15:04:05"
 )
 
-var models = map[reflect.Type]model{}
+//var models = map[reflect.Type]model{}
 
 type field struct {
 	Name  string
@@ -31,19 +31,23 @@ type model struct {
 	Type   reflect.Type
 	Fields map[string]field
 	IdName string
+	dbName string
 }
 
-func newModel(modelType reflect.Type) model {
-	m := model{
-		Name:   modelType.Name(),
-		Fields: make(map[string]field, 0),
-		Type:   modelType,
-	}
-	return m
+type models struct {
+	orm     *Orm
+	typeMap map[reflect.Type]*model
+	nameMap map[string]*model
 }
 
-func getModelInfo(val interface{}) model {
-	value := reflect.Indirect(reflect.ValueOf(val))
+func newModels(orm *Orm) *models {
+	return &models{orm: orm,
+		typeMap: make(map[reflect.Type]*model, 0),
+		nameMap: make(map[string]*model, 0)}
+}
+
+func (p *models) get(m interface{}) *model {
+	value := reflect.Indirect(reflect.ValueOf(m))
 	if value.Kind() == reflect.Slice {
 		value = reflect.Indirect(reflect.New(value.Type().Elem()))
 	}
@@ -52,18 +56,60 @@ func getModelInfo(val interface{}) model {
 	}
 	modeltype := value.Type()
 
-	if mt, ok := models[modeltype]; ok {
+	if mt, ok := p.typeMap[modeltype]; ok {
 		return mt
 	}
 
-	mt := newModel(modeltype)
+	mt := &model{
+		Name:   modeltype.Name(),
+		Fields: make(map[string]field, 0),
+		Type:   modeltype,
+	}
+	if p.orm.mapper != nil {
+		mt.dbName = p.orm.mapper(mt.Name)
+	} else {
+		mt.dbName = mt.Name
+	}
 	for i := 0; i < value.NumField(); i++ {
 		fs := modeltype.Field(i)
 		mt.Fields[fs.Name] = field{Name: fs.Name, Type: fs.Type, StructField: fs, Field: value.Field(i)}
 	}
-	models[modeltype] = mt
+	p.typeMap[modeltype] = mt
+	p.nameMap[mt.dbName] = mt
 	return mt
 }
+
+//func newModel(modelType reflect.Type) model {
+//	m := model{
+//		Name:   modelType.Name(),
+//		Fields: make(map[string]field, 0),
+//		Type:   modelType,
+//	}
+//	return m
+//}
+
+//func getModelInfo(val interface{}) model {
+//	value := reflect.Indirect(reflect.ValueOf(val))
+//	if value.Kind() == reflect.Slice {
+//		value = reflect.Indirect(reflect.New(value.Type().Elem()))
+//	}
+//	if value.Kind() == reflect.Ptr {
+//		value = value.Elem()
+//	}
+//	modeltype := value.Type()
+
+//	if mt, ok := models[modeltype]; ok {
+//		return mt
+//	}
+
+//	mt := newModel(modeltype)
+//	for i := 0; i < value.NumField(); i++ {
+//		fs := modeltype.Field(i)
+//		mt.Fields[fs.Name] = field{Name: fs.Name, Type: fs.Type, StructField: fs, Field: value.Field(i)}
+//	}
+//	models[modeltype] = mt
+//	return mt
+//}
 
 func (p *model) Id() string {
 	if len(p.IdName) > 0 {
