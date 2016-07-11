@@ -32,12 +32,14 @@ func NewSaveYyyyMmFile(root, newName string, ext []string) *SaveYyyyMmFile {
 }
 
 func (p *SaveYyyyMmFile) Save(r *http.Request) {
-	r.ParseMultipartForm(32 << 20)
+	if err := r.ParseMultipartForm(32 << 20); err != nil {
+		p.setUploadErr()
+		return
+	}
 	if p.file, p.header, p.Err = r.FormFile("file"); p.IsErr() {
 		p.setUploadErr()
 		return
 	}
-
 	defer p.file.Close()
 	p.CheckExt()
 	p.NoErrExec(p.checkSaveFileName)
