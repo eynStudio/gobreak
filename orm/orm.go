@@ -3,7 +3,6 @@ package orm
 import (
 	"database/sql"
 	"fmt"
-	"log"
 	"strings"
 
 	. "github.com/eynstudio/gobreak"
@@ -140,7 +139,7 @@ func (p *Orm) Begin() (ts *TxScope) {
 
 func (p *Orm) RawCount(query string, args ...interface{}) (count int64, err error) {
 	query = p.convParams(query)
-	log.Println(query)
+	//	log.Println(query)
 	err = p.db.QueryRow(query, convertArgs2(args)...).Scan(&count)
 	return
 }

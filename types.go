@@ -8,6 +8,7 @@ type T interface{}
 
 type GUID string
 
+func Guid() GUID                 { return GUID(Uuid1().String()) }
 func (p GUID) ID() GUID          { return p }
 func (p GUID) String() string    { return string(p) }
 func (p GUID) StrNoDash() string { return strings.Replace(string(p), "-", "", -1) }

@@ -16,7 +16,8 @@ type Status struct {
 	Msg  string
 }
 
-func NewStatus() *Status { return &Status{} }
+func NewStatus() *Status              { return &Status{} }
+func NewErrStatus(msg string) *Status { return &Status{Code: 1, Msg: msg} }
 func NewStatusErr(err error, ok_msg, err_msg string) IStatus {
 	return NewStatus().OkErrMsg(err, ok_msg, err_msg)
 }

@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	. "github.com/eynstudio/gobreak"
+	"github.com/eynstudio/gobreak/encoding/jsonx"
 )
 
 var (
@@ -75,10 +76,11 @@ func (p *Http) getReader(data T, objType string) {
 	default:
 		switch objType {
 		case "json":
-			var v []byte
-			if v, p.Err = json.Marshal(data); p.NotErr() {
-				p.reader = bytes.NewReader(v)
-			}
+			p.reader = jsonx.Encode(data)
+			//			var v []byte
+			//			if v, p.Err = json.Marshal(data); p.NotErr() {
+			//				p.reader = bytes.NewReader(v)
+			//			}
 		default:
 			p.Err = NotSupportErr
 		}

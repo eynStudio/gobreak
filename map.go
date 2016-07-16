@@ -8,6 +8,8 @@ import (
 
 type M map[string]T
 
+func NewM() M { return make(M, 0) }
+
 func (p M) HasKey(k string) bool {
 	_, ok := p[k]
 	return ok

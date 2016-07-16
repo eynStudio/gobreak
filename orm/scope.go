@@ -292,7 +292,7 @@ func (p *Scope) PageJson(lst T, page, perPage int) (pager db.Paging) {
 	pf := filter.NewPageFilter(page, perPage)
 	p.Limit(pf.Skip(), perPage)
 	pager.Total = p.Count(lst)
-	log.Println(pager.Total)
+	//	log.Println(pager.Total)
 	resultv := reflect.ValueOf(lst)
 	if resultv.Kind() != reflect.Ptr || resultv.Elem().Kind() != reflect.Slice {
 		panic("out argument must be a slice address")
@@ -314,7 +314,7 @@ func (p *Scope) PageJson(lst T, page, perPage int) (pager db.Paging) {
 		resultv.Elem().Set(slicev.Slice(0, slicev.Len()))
 	}
 	pager.Items = lst
-	log.Println(lst)
+	//	log.Println(lst)
 	return
 }
 
@@ -388,7 +388,7 @@ func (p *Scope) buildPage() (sa db.SqlArgs) {
 	}
 	if p.orm.dialect.Driver() == "postgres" {
 		sa.Sql = fmt.Sprintf("limit %v offset %v", p.limit, p.offset)
-		log.Println(sa.Sql)
+		//		log.Println(sa.Sql)
 	} else if p.orm.dialect.Driver() == "mysql" {
 		sa.Sql = fmt.Sprintf("limit %v,%v", p.offset, p.limit)
 	} else if p.orm.dialect.Driver() == "mssql" {
