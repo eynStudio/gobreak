@@ -18,7 +18,7 @@ func (p *Graph) RegAs(name string, val interface{}) error {
 	if err := p.reg(&Obj{val: val, name: name}); err != nil {
 		return err
 	}
-	return p.Populate()
+	return p.Apply()
 }
 
 func (p *Graph) Reg(values ...interface{}) error {
@@ -27,7 +27,7 @@ func (p *Graph) Reg(values ...interface{}) error {
 			return err
 		}
 	}
-	return p.Populate()
+	return p.Apply()
 }
 
 func (p *Graph) reg(objs ...*Obj) error {
@@ -65,7 +65,7 @@ func (p *Graph) reg(objs ...*Obj) error {
 	return nil
 }
 
-func (p *Graph) Populate() error {
+func (p *Graph) Apply() error {
 	for _, o := range p.named {
 		if err := p.populateExplicit(o); err != nil {
 			return err
@@ -123,7 +123,7 @@ StructLoop:
 			continue
 		}
 
-		if tag.Name != "*" {
+		if tag.Name != "" {
 			existing := p.named[tag.Name]
 			if existing == nil {
 				return fmt.Errorf("did not find object named %s required by field %s in type %s", tag.Name, fieldName, o.diType)
@@ -233,7 +233,7 @@ func (p *Graph) populateUnnamedInterface(o *Obj) error {
 			continue
 		}
 
-		if tag.Name != "*" {
+		if tag.Name != "" {
 			panic(fmt.Sprintf("unhandled named instance with name %s", tag.Name))
 		}
 

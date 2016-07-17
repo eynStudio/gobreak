@@ -16,8 +16,9 @@ func IsNilOrZero(v reflect.Value, t reflect.Type) bool {
 }
 
 var (
-	injectPrivate = &tag{Name: "!", Private: true}
-	injectInline  = &tag{Name: "*", Inline: true}
+	injectOnly    = &tag{}
+	injectPrivate = &tag{Name: "", Private: true}
+	injectInline  = &tag{Name: "", Inline: true}
 )
 
 type tag struct {
@@ -35,6 +36,8 @@ func parseTag(tags reflect.StructTag) *tag {
 		return injectInline
 	case "!":
 		return injectPrivate
+	case "*":
+		return injectOnly
 	default:
 		return &tag{Name: val}
 	}
