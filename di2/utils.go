@@ -17,8 +17,8 @@ func IsNilOrZero(v reflect.Value, t reflect.Type) bool {
 
 var (
 	injectOnly    = &tag{}
-	injectPrivate = &tag{Name: "", Private: true}
-	injectInline  = &tag{Name: "", Inline: true}
+	injectPrivate = &tag{Private: true}
+	injectInline  = &tag{Inline: true}
 )
 
 type tag struct {
