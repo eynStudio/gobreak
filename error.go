@@ -55,12 +55,30 @@ func (p Error) NoErrExec(f ...func()) {
 	}
 }
 
+func (p Error) NoErrExecIf(ok bool, f ...func()) {
+	if !ok {
+		return
+	}
+	for _, it := range f {
+		if !p.done {
+			NoErrExec(p.Err, it)
+		}
+	}
+}
+
 func NoErrExec(err error, f func()) {
 	if err == nil {
 		f()
 	}
 }
-
+func NoErrExecIf(ok bool, err error, f func()) {
+	if !ok {
+		return
+	}
+	if err == nil {
+		f()
+	}
+}
 func LogErr(err error) error {
 	if err != nil {
 		log.Printf("%#v", err)

@@ -3,6 +3,7 @@ package orm
 import (
 	"database/sql"
 	"encoding/json"
+	"log"
 	"reflect"
 	"strings"
 
@@ -234,6 +235,8 @@ func (p *model) Obj2Map(data T) map[string]interface{} {
 				m[k] = xx
 			}
 		} else {
+			log.Println(v.Field.Type().String())
+
 			m[k] = val.Elem().FieldByName(k).Interface()
 		}
 	}

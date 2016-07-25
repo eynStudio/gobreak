@@ -12,7 +12,7 @@ import (
 	"strings"
 
 	. "github.com/eynstudio/gobreak"
-	"github.com/eynstudio/gobreak/encoding/jsonx"
+	"github.com/eynstudio/gox/encoding/jsonx"
 )
 
 var (
