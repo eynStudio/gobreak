@@ -5,6 +5,8 @@ import (
 	"unicode"
 )
 
+type MapperFn func(string) string
+
 func DbMapper(n string) string {
 	var buf bytes.Buffer
 	for i, it := range n {

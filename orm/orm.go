@@ -14,7 +14,7 @@ import (
 type Orm struct {
 	db      *sql.DB
 	dialect Dialect
-	mapper  func(string) string
+	mapper  MapperFn
 	models  *models
 }
 
@@ -36,7 +36,7 @@ func MustOpen(driver, source string) *Orm {
 	Must(e)
 	return o
 }
-func (p *Orm) SetMapper(f func(string) string) *Orm {
+func (p *Orm) SetMapper(f MapperFn) *Orm {
 	p.mapper = f
 	return p
 }

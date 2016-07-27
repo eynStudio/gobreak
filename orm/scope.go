@@ -29,9 +29,14 @@ type Scope struct {
 	limit     int
 	hasLimit  bool
 	*sql.Tx
+	builder Ibuilder
 }
 
-func NewScope(orm *Orm) *Scope { return &Scope{orm: orm} }
+func NewScope(orm *Orm) *Scope {
+	s := &Scope{orm: orm}
+	s.builder = newBuilder(s)
+	return s
+}
 
 func (p *Scope) getSelect() string { return "select " + IfThenStr(p._select == "", "*", p._select) }
 func (p *Scope) getFrom() string   { return " from " + p.getTblName() }
