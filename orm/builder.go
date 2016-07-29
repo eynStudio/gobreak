@@ -1,10 +1,14 @@
 package orm
 
-import "github.com/eynstudio/gox"
+import (
+	"fmt"
+
+	"github.com/eynstudio/gobreak/db"
+)
 
 type Ibuilder interface {
-	Where(sql string, args ...gox.T) Ibuilder
-	WhereId(id gox.T) Ibuilder
+	Where(sql string, args ...interface{}) Ibuilder
+	WhereId(id interface{}) Ibuilder
 	Order(args ...string) Ibuilder
 	Limit(n, offset int) Ibuilder
 	Select(f ...string) Ibuilder
@@ -12,16 +16,15 @@ type Ibuilder interface {
 }
 
 type builder struct {
-	limit  int
-	offset int
-	id     gox.T
-	wsql   string
-	args   []gox.T
-	orders []string
-	fields []string
-	from   string
-	mapper MapperFn
-	scope  *Scope
+	limit     int
+	offset    int
+	id        interface{}
+	whereArgs *db.SqlArgs
+	orders    []string
+	fields    []string
+	from      string
+	mapper    MapperFn
+	scope     *Scope
 }
 
 func newBuilder(s *Scope) Ibuilder { return &builder{scope: s} }
@@ -37,12 +40,11 @@ func (p *builder) Select(f ...string) Ibuilder {
 	p.fields = append(p.fields, f...)
 	return p
 }
-func (p *builder) Where(sql string, args ...gox.T) Ibuilder {
-	p.wsql = sql
-	p.args = append(p.args, args...)
+func (p *builder) Where(sql string, args ...interface{}) Ibuilder {
+	p.whereArgs = db.NewAgrs(sql, args...)
 	return p
 }
-func (p *builder) WhereId(id gox.T) Ibuilder {
+func (p *builder) WhereId(id interface{}) Ibuilder {
 	p.id = id
 	return p
 }
@@ -53,4 +55,11 @@ func (p *builder) Order(args ...string) Ibuilder {
 func (p *builder) Limit(n, offset int) Ibuilder {
 	p.limit, p.offset = n, offset
 	return p
+}
+
+func (p *builder) buildWhere() (sa *db.SqlArgs) {
+	if p.hasId() {
+		return db.NewAgrs(fmt.Sprintf(" WHERE (%v=?)", p.mapper("Id")), p.id)
+	}
+	return p.whereArgs
 }

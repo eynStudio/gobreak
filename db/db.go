@@ -13,6 +13,8 @@ type SqlArgs struct {
 	Args []interface{}
 }
 
+func NewAgrs(sql string, args ...interface{}) *SqlArgs { return &SqlArgs{Sql: sql, Args: args} }
+
 func (p *SqlArgs) AddArgs(a ...interface{}) { p.Args = append(p.Args, a...) }
 
 type Paging struct {
