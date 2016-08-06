@@ -36,6 +36,20 @@ func MustOpen(driver, source string) *Orm {
 	Must(e)
 	return o
 }
+
+func (p *Orm) getBuilder(s *Scope) Ibuilder {
+	switch p.dialect.Driver() {
+	case "mysql":
+		return &mysqlBuilder{builder: newBuilder(s)}
+	case "postgres":
+		return &pgBuilder{builder: newBuilder(s)}
+	case "oci8":
+		return &oci8Builder{builder: newBuilder(s)}
+	case "mssql":
+		return &mssqlBuilder{builder: newBuilder(s)}
+	}
+	return nil
+}
 func (p *Orm) SetMapper(f MapperFn) *Orm {
 	p.mapper = f
 	return p

@@ -34,7 +34,7 @@ type Scope struct {
 
 func NewScope(orm *Orm) *Scope {
 	s := &Scope{orm: orm}
-	s.builder = newBuilder(s)
+	s.builder = orm.getBuilder(s)
 	return s
 }
 
@@ -47,17 +47,24 @@ func (p *Scope) getTblName() string {
 	return p.quote(p.model.Name)
 	//		return p.quote(IfThenStr(p._from == "", p.model.Name, p._from))
 }
-func (p *Scope) Select(s string) *Scope {
-	p._select = s
+func (p *Scope) Select(s ...string) *Scope {
+	p.builder.Select(s...)
+	p._select = strings.Join(s, ",")
 	return p
 }
 
 func (p *Scope) From(name string) *Scope {
+	p.builder.From(name)
 	p._from = name
+	return p
+}
+func (p *Scope) Order(args ...string) *Scope {
+	p.builder.Order(args...)
 	return p
 }
 
 func (p *Scope) Where(sql string, args ...interface{}) *Scope {
+	p.builder.Where(sql, args...)
 	p.haswhere = true
 	p.wheresql = sql
 	p.whereargs = args
@@ -65,6 +72,7 @@ func (p *Scope) Where(sql string, args ...interface{}) *Scope {
 }
 
 func (p *Scope) WhereId(id interface{}) *Scope {
+	p.builder.WhereId(id)
 	p.haswhere = true
 	p.whereid = id
 	return p
@@ -72,14 +80,12 @@ func (p *Scope) WhereId(id interface{}) *Scope {
 
 func (p *Scope) Count(model T) int {
 	p.checkModel(model)
-	var sa db.SqlArgs
-	sa.Sql += "select count(*) " + p.getFrom()
-	sa2 := p.buildWhere()
-	sa.Sql += sa2.Sql
-	sa.Args = sa2.Args
-	row := p._queryRow(sa.Sql, convertArgs(sa)...)
+	sa := p.builder.From(p.model.Name).SqlCount()
+	row := p._queryRow2(sa)
 	count := 0
-	row.Scan(&count)
+	if err := row.Scan(&count); err != nil {
+		log.Println(err)
+	}
 	return count
 }
 
@@ -87,25 +93,12 @@ func (p *Scope) Has(model T) bool {
 	return p.Count(model) > 0
 }
 
-//func (p *Scope) One(model T) *Scope {
-//	p.checkModel(model)
-//	sa := p.orm.dialect.BulidTopNSql(p, 1)
-//	var rows *sql.Rows
-//	if rows, p.Err = p._query(sa.Sql, convertArgs(sa)...); p.IsErr() {
-//		p.LogErr()
-//		return p
-//	}
-//	defer rows.Close()
-
-//	p.model.MapRowsAsObj(rows, model)
-//	return p
-//}
-
 func (p *Scope) Get(model T) bool {
 	p.checkModel(model)
-	sa := p.buildQuery()
+	sa := p.builder.From(p.model.Name).SqlSelect()
 	var rows *sql.Rows
-	if rows, p.Err = p._query(sa.Sql, convertArgs(sa)...); p.IsErr() {
+	if rows, p.Err = p._query2(sa); p.IsErr() {
+		log.Println(p.Err)
 		return false
 	}
 	defer rows.Close()
@@ -115,6 +108,21 @@ func (p *Scope) Get(model T) bool {
 	}
 	return false
 }
+
+//func (p *Scope) Get3(model T) bool {
+//	p.checkModel(model)
+//	sa := p.buildQuery()
+//	var rows *sql.Rows
+//	if rows, p.Err = p._query(sa.Sql, convertArgs(sa)...); p.IsErr() {
+//		return false
+//	}
+//	defer rows.Close()
+//	if rows.Next() {
+//		p.model.MapRowsAsObj(rows, model)
+//		return true
+//	}
+//	return false
+//}
 
 func (p *Scope) buildQuery() (sa db.SqlArgs) {
 	sa.Sql += p.getSelect() + p.getFrom()
@@ -126,12 +134,9 @@ func (p *Scope) buildQuery() (sa db.SqlArgs) {
 
 func (p *Scope) All(model T) *Scope {
 	p.checkModel(model)
-	//	w := p.buildWhere()
-	//	sql_ := fmt.Sprintf("SELECT * %s %v", p.getFrom(), w.Sql)
-
-	sa := p.buildQuery()
+	sa := p.builder.From(p.model.Name).SqlSelect()
 	var rows *sql.Rows
-	if rows, p.Err = p._query(sa.Sql, convertArgs(sa)...); p.NotErr() {
+	if rows, p.Err = p._query2(sa); p.NotErr() {
 		defer rows.Close()
 		p.model.MapRowsAsLst(rows, model)
 	}
@@ -144,18 +149,42 @@ func (p *Scope) Query(model T, query string, args ...interface{}) *Scope {
 
 	if rows, p.Err = p._query(query, convertArgs2(args)...); p.NotErr() {
 		defer rows.Close()
-
 		p.model.MapRowsAsLst(rows, model)
 	}
 	return p
 }
 
 func (p *Scope) Limit(offset, limit int) *Scope {
+	p.builder.Limit(limit, offset)
 	p.offset = offset
 	p.limit = limit
 	p.hasLimit = true
 	return p
 }
+
+func (p *Scope) Page2(model T, pf *filter.PageFilter) *db.Paging {
+	p.checkModel(model)
+
+	if pf != nil {
+		p.builder.Limit(pf.PerPage(), pf.Skip())
+		visitor := filter.Visitor{}
+		visitor.Quote = p.orm.dialect.Quote
+		sa := visitor.Visitor(pf.Group)
+		p.builder.Where(sa.Sql, sa.Args...)
+	}
+
+	var rows *sql.Rows
+	paging := &db.Paging{}
+	paging.Total = p.Count(model)
+	sa := p.builder.SqlSelect()
+	if rows, p.Err = p._query2(sa); p.NotErr() {
+		defer rows.Close()
+		p.model.MapRowsAsLst(rows, model)
+		paging.Items = model
+	}
+	return paging
+}
+
 func (p *Scope) Page(model T, pf *filter.PageFilter) *db.Paging {
 	p.checkModel(model)
 	p.pf = pf
@@ -198,13 +227,13 @@ func (p *Scope) PageByOrder(model T, order string, pf *filter.PageFilter) *db.Pa
 	return paging
 }
 
-func (p *Scope) PageSql(model T, pf filter.PageFilter, sql string) *db.Paging {
-	p.checkModel(model)
-	paging := &db.Paging{}
-	//sql="select "
+//func (p *Scope) PageSql(model T, pf filter.PageFilter, sql string) *db.Paging {
+//	p.checkModel(model)
+//	paging := &db.Paging{}
+//	//sql="select "
 
-	return paging
-}
+//	return paging
+//}
 func (p *Scope) Save(model T) *Scope {
 	p.checkModel(model)
 	p.setWhereIdIfNoWhere(model)
@@ -516,9 +545,28 @@ func convertArgs2(args []interface{}) []interface{} {
 
 func (p Scope) IsNotFound() bool { return p.IsErr() && p.Err == db.DbNotFound }
 
+func (p *Scope) _query2(sa *db.SqlArgs) (*sql.Rows, error) {
+	query := p.orm.convParams(sa.Sql)
+	args := convertArgs2(sa.Args)
+	log.Println(query, args)
+	if p.hasTx() {
+		return p.Tx.Query(query, args...)
+	}
+	return p.orm.db.Query(query, args...)
+}
+func (p *Scope) _queryRow2(sa *db.SqlArgs) *sql.Row {
+	query := p.orm.convParams(sa.Sql)
+	args := convertArgs2(sa.Args)
+	log.Println(query, args)
+
+	if p.hasTx() {
+		return p.Tx.QueryRow(query, args...)
+	}
+	return p.orm.db.QueryRow(query, args...)
+}
+
 func (p *Scope) _query(query string, args ...interface{}) (*sql.Rows, error) {
 	query = p.orm.convParams(query)
-	//	log.Println(query, args)
 	if p.hasTx() {
 		return p.Tx.Query(query, args...)
 	}

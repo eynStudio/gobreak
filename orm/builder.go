@@ -1,8 +1,9 @@
 package orm
 
 import (
-	"fmt"
+	"strings"
 
+	. "github.com/eynstudio/gobreak"
 	"github.com/eynstudio/gobreak/db"
 )
 
@@ -13,12 +14,15 @@ type Ibuilder interface {
 	Limit(n, offset int) Ibuilder
 	Select(f ...string) Ibuilder
 	From(f string) Ibuilder
+	SqlSelect() (sa *db.SqlArgs)
+	SqlCount() (sa *db.SqlArgs)
 }
 
 type builder struct {
-	limit     int
-	offset    int
-	id        interface{}
+	//	limit     int
+	//	offset    int
+	//	id        interface{}
+	limitArgs *db.SqlArgs
 	whereArgs *db.SqlArgs
 	orders    []string
 	fields    []string
@@ -27,13 +31,18 @@ type builder struct {
 	scope     *Scope
 }
 
-func newBuilder(s *Scope) Ibuilder { return &builder{scope: s} }
-func (p builder) hasLimit() bool   { return p.limit > 0 }
-func (p builder) hasId() bool      { return p.id != nil }
-func (p builder) hasOrder() bool   { return len(p.orders) > 0 }
+func newBuilder(s *Scope) *builder {
+	b := &builder{scope: s}
+	b.mapper = s.orm.mapper
+	return b
+}
+func (p builder) hasLimit() bool { return p.limitArgs != nil }
+func (p builder) hasOrder() bool { return len(p.orders) > 0 }
 
 func (p *builder) From(f string) Ibuilder {
-	p.from = f
+	if p.from == "" {
+		p.from = f
+	}
 	return p
 }
 func (p *builder) Select(f ...string) Ibuilder {
@@ -41,25 +50,68 @@ func (p *builder) Select(f ...string) Ibuilder {
 	return p
 }
 func (p *builder) Where(sql string, args ...interface{}) Ibuilder {
-	p.whereArgs = db.NewAgrs(sql, args...)
+	p.whereArgs = p.initWhereArgs().Append(sql, args...)
 	return p
 }
 func (p *builder) WhereId(id interface{}) Ibuilder {
-	p.id = id
+	p.whereArgs = p.initWhereArgs().Append(p.mapper("Id")+"=?", id)
 	return p
+}
+func (p *builder) initWhereArgs() *db.SqlArgs {
+	if p.whereArgs == nil {
+		p.whereArgs = db.NewAgrs(" WHERE ")
+	}
+	return p.whereArgs
 }
 func (p *builder) Order(args ...string) Ibuilder {
 	p.orders = append(p.orders, args...)
 	return p
 }
 func (p *builder) Limit(n, offset int) Ibuilder {
-	p.limit, p.offset = n, offset
+	p.limitArgs = db.NewAgrs(` LIMIT ? OFFSET ?`, n, offset)
 	return p
 }
 
-func (p *builder) buildWhere() (sa *db.SqlArgs) {
-	if p.hasId() {
-		return db.NewAgrs(fmt.Sprintf(" WHERE (%v=?)", p.mapper("Id")), p.id)
+func (p *builder) SqlSelect() (sa *db.SqlArgs) {
+	sa = db.NewAgrs(p.whereArgs.Sql, p.whereArgs.Args...)
+	if p.hasOrder() {
+		orders := " ORDER BY " + strings.Join(p.orders, ",")
+		sa = sa.Append(orders)
 	}
-	return p.whereArgs
+	sa = sa.Append2(p.limitArgs)
+	sa.Sql = `SELECT ` + p.buildFields() + " FROM " + p.mapper(p.from) + sa.Sql
+	return
+}
+
+func (p *builder) SqlCount() (sa *db.SqlArgs) {
+	sql := `SELECT count(` + p.mapper("Id") + ") FROM " + p.mapper(p.from) + p.whereArgs.Sql
+	return db.NewAgrs(sql, p.whereArgs.Args...)
+}
+
+func (p *builder) buildFields() string {
+	if len(p.fields) == 0 {
+		return "*"
+	}
+	return strings.Join(p.fields, ",")
+}
+
+type pgBuilder struct {
+	*builder
+}
+
+type mysqlBuilder struct {
+	*builder
+}
+
+type oci8Builder struct {
+	*builder
+}
+
+type mssqlBuilder struct {
+	*builder
+}
+
+func (p *mssqlBuilder) Limit(n, offset int) Ibuilder {
+	p.limitArgs = db.NewAgrs(` OFFSET ? ROW FETCH NEXT ? ROWS only`, offset, n)
+	return p
 }
