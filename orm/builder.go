@@ -19,9 +19,6 @@ type Ibuilder interface {
 }
 
 type builder struct {
-	//	limit     int
-	//	offset    int
-	//	id        interface{}
 	limitArgs *db.SqlArgs
 	whereArgs *db.SqlArgs
 	orders    []string
@@ -37,6 +34,7 @@ func newBuilder(s *Scope) *builder {
 	return b
 }
 func (p builder) hasLimit() bool { return p.limitArgs != nil }
+func (p builder) hasWhere() bool { return p.whereArgs != nil }
 func (p builder) hasOrder() bool { return len(p.orders) > 0 }
 
 func (p *builder) From(f string) Ibuilder {
@@ -73,19 +71,20 @@ func (p *builder) Limit(n, offset int) Ibuilder {
 }
 
 func (p *builder) SqlSelect() (sa *db.SqlArgs) {
-	sa = db.NewAgrs(p.whereArgs.Sql, p.whereArgs.Args...)
+	sql := `SELECT ` + p.buildFields() + " FROM " + p.mapper(p.from)
+	sa = db.NewAgrs(sql)
+	sa = sa.Append2(p.whereArgs)
 	if p.hasOrder() {
 		orders := " ORDER BY " + strings.Join(p.orders, ",")
 		sa = sa.Append(orders)
 	}
-	sa = sa.Append2(p.limitArgs)
-	sa.Sql = `SELECT ` + p.buildFields() + " FROM " + p.mapper(p.from) + sa.Sql
-	return
+	return sa.Append2(p.limitArgs)
 }
 
 func (p *builder) SqlCount() (sa *db.SqlArgs) {
-	sql := `SELECT count(` + p.mapper("Id") + ") FROM " + p.mapper(p.from) + p.whereArgs.Sql
-	return db.NewAgrs(sql, p.whereArgs.Args...)
+	sql := `SELECT count(` + p.mapper("Id") + ") FROM " + p.mapper(p.from)
+	sa = db.NewAgrs(sql)
+	return sa.Append2(p.whereArgs)
 }
 
 func (p *builder) buildFields() string {
