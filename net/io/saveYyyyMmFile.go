@@ -84,7 +84,7 @@ func (p *SaveYyyyMmFile) checkSaveFileName() {
 		p.saveName = path.Join(p.saveName, p.header.Filename)
 	}
 }
-
+func (p *SaveYyyyMmFile) GetFileName() string    { return p.header.Filename }
 func (p *SaveYyyyMmFile) setUploadErr()          { p.SetErr("文件上传失败") }
 func (p SaveYyyyMmFile) GetSaveFilePath() string { return "/" + p.saveName }
 

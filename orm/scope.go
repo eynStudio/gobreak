@@ -80,7 +80,11 @@ func (p *Scope) WhereId(id interface{}) *Scope {
 
 func (p *Scope) Count(model T) int {
 	p.checkModel(model)
-	sa := p.builder.From(p.model.Name).SqlCount()
+	n := ""
+	if p.model != nil {
+		n = p.model.Name
+	}
+	sa := p.builder.From(n).SqlCount()
 	row := p._queryRow2(sa)
 	count := 0
 	if err := row.Scan(&count); err != nil {
@@ -95,7 +99,11 @@ func (p *Scope) Has(model T) bool {
 
 func (p *Scope) Get(model T) bool {
 	p.checkModel(model)
-	sa := p.builder.From(p.model.Name).SqlSelect()
+	n := ""
+	if p.model != nil {
+		n = p.model.Name
+	}
+	sa := p.builder.From(n).SqlSelect()
 	var rows *sql.Rows
 	if rows, p.Err = p._query2(sa); p.IsErr() {
 		log.Println(p.Err)
@@ -134,7 +142,11 @@ func (p *Scope) buildQuery() (sa db.SqlArgs) {
 
 func (p *Scope) All(model T) *Scope {
 	p.checkModel(model)
-	sa := p.builder.From(p.model.Name).SqlSelect()
+	n := ""
+	if p.model != nil {
+		n = p.model.Name
+	}
+	sa := p.builder.From(n).SqlSelect()
 	var rows *sql.Rows
 	if rows, p.Err = p._query2(sa); p.NotErr() {
 		defer rows.Close()
