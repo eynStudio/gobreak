@@ -196,7 +196,40 @@ func (p *Scope) Page2(model T, pf *filter.PageFilter) *db.Paging {
 	}
 	return paging
 }
+func (p *Scope) PageJson2(lst T, pf *filter.PageFilter) *db.Paging {
+	p.checkModel(lst)
 
+	if pf != nil {
+		p.builder.Limit(pf.PerPage(), pf.Skip())
+		visitor := filter.Visitor{}
+		visitor.Quote = p.orm.dialect.Quote
+		sa := visitor.Visitor(pf.Group)
+		p.builder.Where(sa.Sql, sa.Args...)
+	}
+
+	var rows *sql.Rows
+	paging := &db.Paging{}
+	paging.Total = p.Count(lst)
+	sa := p.builder.SqlSelect()
+
+	resultv := reflect.ValueOf(lst)
+	if resultv.Kind() != reflect.Ptr || resultv.Elem().Kind() != reflect.Slice {
+		panic("out argument must be a slice address")
+	}
+	slicev := resultv.Elem()
+	if rows, p.Err = p._query2(sa); p.NotErr() {
+		defer rows.Close()
+		for rows.Next() {
+			var v []byte
+			rows.Scan(&v)
+			obj := reflect.New(p.model.Type).Interface()
+			slicev = reflect.Append(slicev, reflect.ValueOf(obj).Elem())
+		}
+		resultv.Elem().Set(slicev.Slice(0, slicev.Len()))
+	}
+	paging.Items = lst
+	return paging
+}
 func (p *Scope) Page(model T, pf *filter.PageFilter) *db.Paging {
 	p.checkModel(model)
 	p.pf = pf
