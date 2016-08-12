@@ -223,6 +223,7 @@ func (p *Scope) PageJson2(lst T, pf *filter.PageFilter) *db.Paging {
 			var v []byte
 			rows.Scan(&v)
 			obj := reflect.New(p.model.Type).Interface()
+			json.Unmarshal(v, obj)
 			slicev = reflect.Append(slicev, reflect.ValueOf(obj).Elem())
 		}
 		resultv.Elem().Set(slicev.Slice(0, slicev.Len()))
