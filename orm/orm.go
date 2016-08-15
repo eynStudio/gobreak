@@ -24,7 +24,7 @@ func Open(driver, source string) (*Orm, error) {
 	orm := &Orm{dialect: NewDialect(driver)}
 	orm.models = newModels(orm)
 	orm.db, err = sql.Open(driver, source)
-
+	orm.mapper=SameMapper
 	if err == nil {
 		err = orm.db.Ping()
 	}

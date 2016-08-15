@@ -21,3 +21,5 @@ func DbMapper(n string) string {
 	}
 	return buf.String()
 }
+
+func SameMapper(n string) string {return n}
