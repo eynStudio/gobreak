@@ -3,6 +3,8 @@ package orm
 import (
 	"database/sql"
 	"log"
+
+	"github.com/eynstudio/gobreak/db"
 )
 
 type TxScope struct {
@@ -17,12 +19,13 @@ func (p *TxScope) NewScope() *Scope {
 	return s
 }
 
-func (p *TxScope) Exec(query string, args ...interface{}) int64 {
-	if r, err := p.Tx.Exec(query, args...); err != nil {
-		panic(err)
-	} else {
-		return p.getAffectedRows(r)
-	}
+func (p *TxScope) Exec(query string, args ...interface{}) {
+	p.exec(*db.NewAgrs(query, args...))
+	//	if r, err := p.Tx.Exec(query, args...); err != nil {
+	//		panic(err)
+	//	} else {
+	//		return p.getAffectedRows(r)
+	//	}
 }
 
 func (p *TxScope) Prepare(query string) *sql.Stmt {
@@ -55,8 +58,8 @@ func (p *TxScope) Count(query string, args ...interface{}) (count int64) {
 	return
 }
 
-func (p *TxScope) Truncate(table string) int64 {
-	return p.Exec("TRUNCATE TABLE " + table)
+func (p *TxScope) Truncate(table string) {
+	p.Exec("TRUNCATE TABLE " + table)
 }
 
 func (p *TxScope) Commit() (err error) {
