@@ -322,6 +322,27 @@ func (p *Scope) SaveJson(id GUID, data T) *Scope {
 	return p
 }
 
+func (p *Scope) GetJson2(data T) bool {
+	p.checkModel(data)
+	p.Select(`"Json"`)
+	sa := p.builder.SqlSelect()
+	rows, err := p._query2(sa)
+	if p.Err = err; p.IsErr() {
+		log.Println(p.Err)
+		return false
+	}
+	defer rows.Close()
+
+	if !rows.Next() {
+		return false
+	}
+
+	var vv []byte
+	p.Err = rows.Scan(&vv)
+	p.NoErrExec(func() { p.Err = json.Unmarshal(vv, &data) })
+	return !p.IsErr()
+}
+
 func (p *Scope) GetJson(data T) bool {
 	p.checkModel(data)
 	p.Select(`"Json"`)
