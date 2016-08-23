@@ -3,6 +3,7 @@ package orm
 import (
 	"database/sql"
 	"encoding/json"
+	"log"
 	"reflect"
 	"strings"
 
@@ -170,8 +171,13 @@ func (p *model) MapObjFromRowValues(cols []string, values []interface{}) reflect
 			if field.IsJsonb() {
 				xx := reflect.ValueOf(value).Elem().Interface().([]byte)
 				fieldobj := reflect.New(field.Type).Interface()
-				json.Unmarshal(xx, &fieldobj)
-				obj.FieldByName(column).Set(reflect.ValueOf(fieldobj).Elem())
+				if err := json.Unmarshal(xx, &fieldobj); err != nil {
+					log.Println(err)
+				}
+				log.Println(field.Type, fieldobj)
+				if reflect.ValueOf(fieldobj).IsValid() {
+					obj.FieldByName(column).Set(reflect.ValueOf(fieldobj).Elem())
+				}
 			} else if field.Field.Kind() == reflect.Ptr {
 				obj.FieldByName(column).Set(reflect.ValueOf(value).Elem())
 			} else if field.Field.Kind() == reflect.String {
