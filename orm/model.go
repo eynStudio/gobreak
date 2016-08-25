@@ -174,7 +174,7 @@ func (p *model) MapObjFromRowValues(cols []string, values []interface{}) reflect
 				if err := json.Unmarshal(xx, &fieldobj); err != nil {
 					log.Println(err)
 				}
-				log.Println(field.Type, fieldobj)
+
 				if reflect.ValueOf(fieldobj).IsValid() {
 					obj.FieldByName(column).Set(reflect.ValueOf(fieldobj).Elem())
 				}
