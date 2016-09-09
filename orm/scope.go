@@ -366,15 +366,18 @@ func (p *Scope) GetJson(data T) bool {
 
 func (p *Scope) AllJson(lst T) *Scope {
 	p.checkModel(lst)
+	p.Select(p.orm.mapper("Json"))
+	p.From(p.model.Name)
 	resultv := reflect.ValueOf(lst)
 	if resultv.Kind() != reflect.Ptr || resultv.Elem().Kind() != reflect.Slice {
 		panic("out argument must be a slice address")
 	}
 	slicev := resultv.Elem()
 
-	sql_ := fmt.Sprintf(`SELECT "Json" %s where `+p.wheresql, p.getFrom())
+	sa := p.builder.SqlSelect()
+
 	var rows *sql.Rows
-	if rows, p.Err = p._query(sql_, p.whereargs...); p.NotErr() {
+	if rows, p.Err = p._query2(sa); p.NotErr() {
 		defer rows.Close()
 		for rows.Next() {
 			var v []byte
@@ -388,6 +391,29 @@ func (p *Scope) AllJson(lst T) *Scope {
 	return p
 }
 
+//func (p *Scope) AllJson(lst T) *Scope {
+//	p.checkModel(lst)
+//	resultv := reflect.ValueOf(lst)
+//	if resultv.Kind() != reflect.Ptr || resultv.Elem().Kind() != reflect.Slice {
+//		panic("out argument must be a slice address")
+//	}
+//	slicev := resultv.Elem()
+
+//	sql_ := fmt.Sprintf(`SELECT "Json" %s where `+p.wheresql, p.getFrom())
+//	var rows *sql.Rows
+//	if rows, p.Err = p._query(sql_, p.whereargs...); p.NotErr() {
+//		defer rows.Close()
+//		for rows.Next() {
+//			var v []byte
+//			rows.Scan(&v)
+//			obj := reflect.New(p.model.Type).Interface()
+//			json.Unmarshal(v, obj)
+//			slicev = reflect.Append(slicev, reflect.ValueOf(obj).Elem())
+//		}
+//		resultv.Elem().Set(slicev.Slice(0, slicev.Len()))
+//	}
+//	return p
+//}
 func (p *Scope) PageJson(lst T, page, perPage int) (pager db.Paging) {
 	p.checkModel(lst)
 	pf := filter.NewPageFilter(page, perPage)

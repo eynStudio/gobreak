@@ -39,7 +39,7 @@ func (p builder) hasOrder() bool { return len(p.orders) > 0 }
 
 func (p *builder) From(f string) Ibuilder {
 	if p.from == "" {
-		p.from = f
+		p.from = p.mapper(f)
 	}
 	return p
 }
