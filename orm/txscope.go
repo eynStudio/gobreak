@@ -21,11 +21,6 @@ func (p *TxScope) NewScope() *Scope {
 
 func (p *TxScope) Exec(query string, args ...interface{}) {
 	p.exec(*db.NewAgrs(query, args...))
-	//	if r, err := p.Tx.Exec(query, args...); err != nil {
-	//		panic(err)
-	//	} else {
-	//		return p.getAffectedRows(r)
-	//	}
 }
 
 func (p *TxScope) Prepare(query string) *sql.Stmt {

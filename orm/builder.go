@@ -48,6 +48,9 @@ func (p *builder) Select(f ...string) Ibuilder {
 	return p
 }
 func (p *builder) Where(sql string, args ...interface{}) Ibuilder {
+	if sql == "" {
+		return p
+	}
 	p.whereArgs = p.initWhereArgs().Append(sql, args...)
 	return p
 }

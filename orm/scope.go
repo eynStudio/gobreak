@@ -155,6 +155,43 @@ func (p *Scope) All(model T) *Scope {
 	return p
 }
 
+func (p *Scope) Int() (n int) {
+	sa := p.builder.SqlSelect()
+	r := p._queryRow2(sa)
+	if err := r.Scan(&n); err != nil {
+		//		log.Println(err)
+	}
+	return
+}
+
+func (p *Scope) Strs() (lst []string) {
+	sa := p.builder.SqlSelect()
+	var rows *sql.Rows
+	if rows, p.Err = p._query2(sa); p.NotErr() {
+		defer rows.Close()
+		for rows.Next() {
+			var v string
+			rows.Scan(&v)
+			lst = append(lst, v)
+		}
+	}
+	return
+}
+
+func (p *Scope) Guids() (lst []GUID) {
+	sa := p.builder.SqlSelect()
+	var rows *sql.Rows
+	if rows, p.Err = p._query2(sa); p.NotErr() {
+		defer rows.Close()
+		for rows.Next() {
+			var v string
+			rows.Scan(&v)
+			lst = append(lst, GUID(v))
+		}
+	}
+	return
+}
+
 func (p *Scope) Query(model T, query string, args ...interface{}) *Scope {
 	p.checkModel(model)
 	var rows *sql.Rows
@@ -650,7 +687,7 @@ func (p *Scope) _query2(sa *db.SqlArgs) (*sql.Rows, error) {
 func (p *Scope) _queryRow2(sa *db.SqlArgs) *sql.Row {
 	query := p.orm.convParams(sa.Sql)
 	args := convertArgs2(sa.Args)
-	log.Println(query, args)
+	//	log.Println(query, args)
 
 	if p.hasTx() {
 		return p.Tx.QueryRow(query, args...)
@@ -679,7 +716,7 @@ func (p *Scope) _queryRow(query string, args ...interface{}) *sql.Row {
 func (p *Scope) exec(sa db.SqlArgs) *Scope {
 	params := convertArgs(sa)
 	query := p.orm.convParams(sa.Sql)
-	//	log.Println(query, params)
+	log.Println(query, params)
 
 	if p.hasTx() {
 		_, p.Err = p.Tx.Exec(query, params...)
