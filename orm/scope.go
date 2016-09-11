@@ -159,7 +159,7 @@ func (p *Scope) Int() (n int) {
 	sa := p.builder.SqlSelect()
 	r := p._queryRow2(sa)
 	if err := r.Scan(&n); err != nil {
-		//		log.Println(err)
+		log.Println(err)
 	}
 	return
 }
@@ -687,7 +687,7 @@ func (p *Scope) _query2(sa *db.SqlArgs) (*sql.Rows, error) {
 func (p *Scope) _queryRow2(sa *db.SqlArgs) *sql.Row {
 	query := p.orm.convParams(sa.Sql)
 	args := convertArgs2(sa.Args)
-	//	log.Println(query, args)
+	log.Println(query, args)
 
 	if p.hasTx() {
 		return p.Tx.QueryRow(query, args...)
@@ -705,7 +705,7 @@ func (p *Scope) _query(query string, args ...interface{}) (*sql.Rows, error) {
 
 func (p *Scope) _queryRow(query string, args ...interface{}) *sql.Row {
 	query = p.orm.convParams(query)
-	//	log.Println(query, args)
+	log.Println(query, args)
 
 	if p.hasTx() {
 		return p.Tx.QueryRow(query, args...)
