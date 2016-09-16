@@ -14,6 +14,14 @@ func (p M) HasKey(k string) bool {
 	_, ok := p[k]
 	return ok
 }
+func (p M) HasKeys(k ...string) bool {
+	for _, it := range k {
+		if !p.HasKey(it) {
+			return false
+		}
+	}
+	return true
+}
 func (p M) GetStrOr(k, or string) string {
 	if v, ok := p[k]; ok {
 		return v.(string)
