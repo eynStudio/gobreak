@@ -1,9 +1,11 @@
 package orm
 
 import (
+	"encoding/json"
+	"fmt"
 	"strings"
 
-	//	. "github.com/eynstudio/gobreak"
+	. "github.com/eynstudio/gobreak"
 	"github.com/eynstudio/gobreak/db"
 )
 
@@ -16,6 +18,7 @@ type Ibuilder interface {
 	From(f string) Ibuilder
 	SqlSelect() (sa *db.SqlArgs)
 	SqlCount() (sa *db.SqlArgs)
+	SqlSaveJson(id GUID, data T) (sa *db.SqlArgs)
 }
 
 type builder struct {
@@ -88,6 +91,15 @@ func (p *builder) SqlCount() (sa *db.SqlArgs) {
 	sql := `SELECT count(` + p.mapper("Id") + ") FROM " + p.mapper(p.from)
 	sa = db.NewAgrs(sql)
 	return sa.Append2(p.whereArgs)
+}
+
+func (p *builder) SqlSaveJson(id GUID, data T) (sa *db.SqlArgs) {
+	buf, _ := json.Marshal(data)
+	_id, _json := p.mapper("Id"), p.mapper("Json")
+	sql := fmt.Sprintf(`Insert into %s(%s,%s) values($1,$2) ON CONFLICT (%s) DO UPDATE SET (%s,%s)=($1,$2)`,
+		p.mapper(p.from), _id, _json, _id, _id, _json)
+
+	return db.NewAgrs(sql, id, buf)
 }
 
 func (p *builder) buildFields() string {
