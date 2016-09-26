@@ -358,7 +358,7 @@ func (p *Scope) SaveJson(id GUID, data T) *Scope {
 
 func (p *Scope) GetJson2(data T) bool {
 	p.checkModel(data)
-	p.Select(`"Json"`)
+	p.Select(p.orm.mapper("Json")).From(p.model.Name)
 	sa := p.builder.SqlSelect()
 	rows, err := p._query2(sa)
 	if p.Err = err; p.IsErr() {
