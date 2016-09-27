@@ -675,7 +675,7 @@ func (p Scope) IsNotFound() bool { return p.IsErr() && p.Err == db.DbNotFound }
 func (p *Scope) _query2(sa *db.SqlArgs) (*sql.Rows, error) {
 	query := p.orm.convParams(sa.Sql)
 	args := convertArgs2(sa.Args)
-	log.Println(query, args)
+	//	log.Println(query, args)
 	if p.hasTx() {
 		return p.Tx.Query(query, args...)
 	}

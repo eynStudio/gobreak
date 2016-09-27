@@ -170,6 +170,9 @@ func (p *model) MapObjFromRowValues(cols []string, values []interface{}) reflect
 		if field, ok := p.Fields[column]; ok {
 			if field.IsJsonb() {
 				xx := reflect.ValueOf(value).Elem().Interface().([]byte)
+				if len(xx) == 0 {
+					continue
+				}
 				fieldobj := reflect.New(field.Type).Interface()
 				if err := json.Unmarshal(xx, &fieldobj); err != nil {
 					log.Println(err)
