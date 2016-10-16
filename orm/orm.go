@@ -24,7 +24,7 @@ func Open(driver, source string) (*Orm, error) {
 	orm := &Orm{dialect: NewDialect(driver)}
 	orm.models = newModels(orm)
 	orm.db, err = sql.Open(driver, source)
-	orm.mapper=SameMapper
+	orm.mapper = SameMapper
 	if err == nil {
 		err = orm.db.Ping()
 	}
@@ -56,6 +56,9 @@ func (p *Orm) SetMapper(f MapperFn) *Orm {
 }
 func (p *Orm) DB() *sql.DB            { return p.db }
 func (p *Orm) LoadMeta() *meta.MetaDb { return p.dialect.LoadMeta(p.db) }
+func (p *Orm) Order(args ...string) *Scope {
+	return NewScope(p).Order(args...)
+}
 
 func (p *Orm) Where(sql string, args ...interface{}) *Scope {
 	return NewScope(p).Where(sql, args...)

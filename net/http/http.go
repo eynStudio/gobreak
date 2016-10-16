@@ -7,8 +7,10 @@ import (
 	"errors"
 	"io"
 	"io/ioutil"
+	"log"
 	"net"
 	"net/http"
+	"os"
 	"strings"
 
 	. "github.com/eynstudio/gobreak"
@@ -56,6 +58,7 @@ func (p *Http) GetBytes() (data []byte) {
 func (p *Http) GetStr() (str string) { return string(p.GetBytes()) }
 func (p *Http) GetJson(m T) *Http {
 	data := p.GetBytes()
+	log.Println(string(data))
 	p.NoErrExec(func() { p.Err = json.Unmarshal(data, m) })
 	return p
 }
@@ -65,6 +68,17 @@ func (p *Http) GetXml(m T) *Http {
 	return p
 }
 
+func (p *Http) Save(f string) *Http {
+	p.resp, p.Err = http.DefaultClient.Do(p.req)
+	defer p.resp.Body.Close()
+	var file *os.File
+	p.NoErrExec(func() { file, p.Err = os.Create(f) })
+	p.NoErrExec(func() {
+		_, p.Err = io.Copy(file, p.resp.Body)
+		file.Close()
+	})
+	return p
+}
 func (p *Http) getReader(data T, objType string) {
 	switch v := data.(type) {
 	case io.Reader:
