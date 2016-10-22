@@ -247,6 +247,7 @@ func (p *Scope) PageJson2(lst T, pf *filter.PageFilter) *db.Paging {
 	var rows *sql.Rows
 	paging := &db.Paging{}
 	paging.Total = p.Count(lst)
+	p.builder.Select(`"Json"`)
 	sa := p.builder.SqlSelect()
 
 	resultv := reflect.ValueOf(lst)
