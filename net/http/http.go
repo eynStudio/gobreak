@@ -7,7 +7,6 @@ import (
 	"errors"
 	"io"
 	"io/ioutil"
-	"log"
 	"net"
 	"net/http"
 	"os"
@@ -58,7 +57,6 @@ func (p *Http) GetBytes() (data []byte) {
 func (p *Http) GetStr() (str string) { return string(p.GetBytes()) }
 func (p *Http) GetJson(m T) *Http {
 	data := p.GetBytes()
-	log.Println(string(data))
 	p.NoErrExec(func() { p.Err = json.Unmarshal(data, m) })
 	return p
 }

@@ -713,7 +713,7 @@ func (p *Scope) _queryRow(query string, args ...interface{}) *sql.Row {
 func (p *Scope) exec(sa db.SqlArgs) *Scope {
 	params := convertArgs(sa)
 	query := p.orm.convParams(sa.Sql)
-	log.Println(query, params)
+	//	log.Println(query, params)
 
 	if p.hasTx() {
 		_, p.Err = p.Tx.Exec(query, params...)
