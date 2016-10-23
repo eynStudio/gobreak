@@ -685,7 +685,7 @@ func (p *Scope) _query2(sa *db.SqlArgs) (*sql.Rows, error) {
 func (p *Scope) _queryRow2(sa *db.SqlArgs) *sql.Row {
 	query := p.orm.convParams(sa.Sql)
 	args := convertArgs2(sa.Args)
-	log.Println(query, args)
+	//	log.Println(query, args)
 
 	if p.hasTx() {
 		return p.Tx.QueryRow(query, args...)
@@ -703,7 +703,7 @@ func (p *Scope) _query(query string, args ...interface{}) (*sql.Rows, error) {
 
 func (p *Scope) _queryRow(query string, args ...interface{}) *sql.Row {
 	query = p.orm.convParams(query)
-	log.Println(query, args)
+	//	log.Println(query, args)
 
 	if p.hasTx() {
 		return p.Tx.QueryRow(query, args...)
