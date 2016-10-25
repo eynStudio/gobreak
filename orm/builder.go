@@ -19,6 +19,7 @@ type Ibuilder interface {
 	SqlSelect() (sa *db.SqlArgs)
 	SqlCount() (sa *db.SqlArgs)
 	SqlSaveJson(id GUID, data T) (sa *db.SqlArgs)
+	hasSelect() bool
 }
 
 type builder struct {
@@ -36,9 +37,10 @@ func newBuilder(s *Scope) *builder {
 	b.mapper = s.orm.mapper
 	return b
 }
-func (p builder) hasLimit() bool { return p.limitArgs != nil }
-func (p builder) hasWhere() bool { return p.whereArgs != nil }
-func (p builder) hasOrder() bool { return len(p.orders) > 0 }
+func (p builder) hasLimit() bool  { return p.limitArgs != nil }
+func (p builder) hasWhere() bool  { return p.whereArgs != nil }
+func (p builder) hasOrder() bool  { return len(p.orders) > 0 }
+func (p builder) hasSelect() bool { return len(p.fields) > 0 }
 
 func (p *builder) From(f string) Ibuilder {
 	if p.from == "" {
