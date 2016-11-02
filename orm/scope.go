@@ -508,19 +508,26 @@ func (p *Scope) UpdateFields(model T, fields []string) *Scope {
 
 func (p *Scope) Del(model T) *Scope {
 	p.checkModel(model)
+	p.From(p.model.Name)
 	p.setWhereIdIfNoWhere(model)
-	w := p.buildWhere()
-	w.Sql = fmt.Sprintf("DELETE from %s %v", p.quote(p.model.Name), w.Sql)
-	p.exec(w)
-	return p
+	sa := p.builder.SqlDel()
+
+	return p.exec(*sa)
+	//	w := p.buildWhere()
+	//	w.Sql = fmt.Sprintf("DELETE from %s %v", p.quote(p.model.Name), w.Sql)
+	//	p.exec(w)
+	//	return p
 }
 
 func (p *Scope) DelAll(model T) *Scope {
 	p.checkModel(model)
-	var sa db.SqlArgs
-	sa.Sql = fmt.Sprintf("DELETE from %s", p.quote(p.model.Name))
-	p.exec(sa)
-	return p
+	p.From(p.model.Name)
+	sa := p.builder.SqlDel()
+	return p.exec(*sa)
+	//	var sa db.SqlArgs
+	//	sa.Sql = fmt.Sprintf("DELETE from %s", p.quote(p.model.Name))
+	//	p.exec(sa)
+	//	return p
 }
 
 func (p *Scope) buildWhere() (sa db.SqlArgs) {

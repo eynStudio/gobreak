@@ -17,9 +17,11 @@ type Ibuilder interface {
 	Select(f ...string) Ibuilder
 	From(f string) Ibuilder
 	SqlSelect() (sa *db.SqlArgs)
+	SqlDel() (sa *db.SqlArgs)
 	SqlCount() (sa *db.SqlArgs)
 	SqlSaveJson(id GUID, data T) (sa *db.SqlArgs)
 	hasSelect() bool
+	hasWhere() bool
 }
 
 type builder struct {
@@ -87,6 +89,12 @@ func (p *builder) SqlSelect() (sa *db.SqlArgs) {
 		sa = sa.Append(orders)
 	}
 	return sa.Append2(p.limitArgs)
+}
+
+func (p *builder) SqlDel() (sa *db.SqlArgs) {
+	sql := `DELETE FROM ` + p.mapper(p.from)
+	sa = db.NewAgrs(sql)
+	return sa.Append2(p.whereArgs)
 }
 
 func (p *builder) SqlCount() (sa *db.SqlArgs) {
