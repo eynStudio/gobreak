@@ -1,6 +1,6 @@
 package gobreak
 
-var OkStatus Status = Status{Code: 0, Msg: "OK"}
+var OkStatus = &Status{Code: 0, Msg: "OK"}
 
 type IStatus interface {
 	SetStatus(code int, msg string) IStatus
