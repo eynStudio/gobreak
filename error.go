@@ -38,13 +38,8 @@ func (p *Error) SetErrfIf(yes bool, f string, args ...interface{}) {
 	}
 }
 
-func (p Error) GetStatus() (m Status) {
-	if p.IsErr() {
-		m.ErrMsg(p.msg)
-	} else {
-		m.OkMsg(p.msg)
-	}
-	return
+func (p Error) GetStatus() IStatus {
+	return NewStatusErr(p.Err, p.msg, p.msg)
 }
 
 func (p Error) NoErrExec(f ...func()) {

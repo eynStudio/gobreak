@@ -89,7 +89,7 @@ func (p *SaveYyyyMmFile) setUploadErr()          { p.SetErr("文件上传失败"
 func (p SaveYyyyMmFile) GetSaveFilePath() string { return "/" + p.saveName }
 
 func (p SaveYyyyMmFile) GetUrlStatus() (m UrlStatus) {
-	m.Status = p.GetStatus()
+	m.Status = p.GetStatus().GetStatus()
 	if p.NotErr() {
 		m.Url = p.GetSaveFilePath()
 	}

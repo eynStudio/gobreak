@@ -9,6 +9,7 @@ type IStatus interface {
 	Ok() IStatus
 	IsOk() bool
 	IsErr() bool
+	GetStatus() Status
 }
 
 type Status struct {
@@ -39,4 +40,7 @@ func (p *Status) SetStatus(code int, msg string) IStatus {
 	p.Code = code
 	p.Msg = msg
 	return p
+}
+func (p *Status) GetStatus() Status {
+	return *p
 }
