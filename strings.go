@@ -22,6 +22,12 @@ func Str2F64(str string, defaultVal float64) float64 {
 	}
 	return defaultVal
 }
+func Strs2F64(strs []string, defaultVal float64) (f []float64) {
+	for _, it := range strs {
+		f = append(f, Str2F64(it, defaultVal))
+	}
+	return
+}
 func Str2Int(str string, defaultVal int) int {
 	if f, err := strconv.Atoi(str); err == nil {
 		return f
