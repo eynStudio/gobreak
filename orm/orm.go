@@ -54,6 +54,12 @@ func (p *Orm) SetMapper(f MapperFn) *Orm {
 	p.mapper = f
 	return p
 }
+func (p *Orm) Mapper() MapperFn {
+	if p.mapper == nil {
+		return SameMapper
+	}
+	return p.mapper
+}
 func (p *Orm) DB() *sql.DB            { return p.db }
 func (p *Orm) LoadMeta() *meta.MetaDb { return p.dialect.LoadMeta(p.db) }
 func (p *Orm) Order(args ...string) *Scope {

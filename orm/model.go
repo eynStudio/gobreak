@@ -15,9 +15,10 @@ const (
 )
 
 type field struct {
-	Name  string
-	Type  reflect.Type
-	Field reflect.Value
+	Name   string
+	DbName string
+	Type   reflect.Type
+	Field  reflect.Value
 	reflect.StructField
 }
 
@@ -64,14 +65,18 @@ func (p *models) get(m interface{}) *model {
 		Fields: make(map[string]field, 0),
 		Type:   modeltype,
 	}
-	if p.orm.mapper != nil {
-		mt.dbName = p.orm.mapper(mt.Name)
-	} else {
-		mt.dbName = mt.Name
-	}
+
+	mapper := p.orm.Mapper()
+	mt.dbName = mapper(mt.Name)
+	//	if p.orm.mapper != nil {
+	//		mt.dbName = p.orm.mapper(mt.Name)
+	//	} else {
+	//		mt.dbName = mt.Name
+	//	}
 	for i := 0; i < value.NumField(); i++ {
 		fs := modeltype.Field(i)
-		mt.Fields[fs.Name] = field{Name: fs.Name, Type: fs.Type, StructField: fs, Field: value.Field(i)}
+		dbName := mapper(fs.Name)
+		mt.Fields[dbName] = field{Name: fs.Name, DbName: dbName, Type: fs.Type, StructField: fs, Field: value.Field(i)}
 	}
 	p.typeMap[modeltype] = mt
 	p.nameMap[mt.dbName] = mt
@@ -179,13 +184,13 @@ func (p *model) MapObjFromRowValues(cols []string, values []interface{}) reflect
 				}
 
 				if reflect.ValueOf(fieldobj).IsValid() {
-					obj.FieldByName(column).Set(reflect.ValueOf(fieldobj).Elem())
+					obj.FieldByName(field.Name).Set(reflect.ValueOf(fieldobj).Elem())
 				}
 			} else if field.Field.Kind() == reflect.Ptr {
-				obj.FieldByName(column).Set(reflect.ValueOf(value).Elem())
+				obj.FieldByName(field.Name).Set(reflect.ValueOf(value).Elem())
 			} else if field.Field.Kind() == reflect.String {
 				if v := reflect.ValueOf(value).Elem().Elem(); v.IsValid() {
-					obj.FieldByName(column).SetString(v.Interface().(string))
+					obj.FieldByName(field.Name).SetString(v.Interface().(string))
 				}
 				//			} else if field.Field.Kind() == reflect.Struct {
 				//				switch field.Field.Type().String() {
