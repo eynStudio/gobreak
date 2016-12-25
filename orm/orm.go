@@ -14,7 +14,7 @@ import (
 type Orm struct {
 	db      *sql.DB
 	dialect Dialect
-	mapper  MapperFn
+	mapper  Mapper
 	models  *models
 }
 
@@ -24,7 +24,6 @@ func Open(driver, source string) (*Orm, error) {
 	orm := &Orm{dialect: NewDialect(driver)}
 	orm.models = newModels(orm)
 	orm.db, err = sql.Open(driver, source)
-	orm.mapper = SameMapper
 	if err == nil {
 		err = orm.db.Ping()
 	}
@@ -50,13 +49,13 @@ func (p *Orm) getBuilder(s *Scope) Ibuilder {
 	}
 	return nil
 }
-func (p *Orm) SetMapper(f MapperFn) *Orm {
+func (p *Orm) UseMapper(f Mapper) *Orm {
 	p.mapper = f
 	return p
 }
-func (p *Orm) Mapper() MapperFn {
+func (p *Orm) Mapper() Mapper {
 	if p.mapper == nil {
-		return SameMapper
+		p.mapper = MapperSelf()
 	}
 	return p.mapper
 }

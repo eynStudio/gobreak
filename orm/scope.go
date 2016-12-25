@@ -362,7 +362,7 @@ func (p *Scope) SaveJson(id GUID, data T) *Scope {
 
 func (p *Scope) GetJson2(data T) bool {
 	p.checkModel(data)
-	p.Select(p.orm.mapper("Json")).From(p.model.Name)
+	p.Select(p.orm.Mapper().Map2Db("Json")).From(p.model.Name)
 	sa := p.builder.SqlSelect()
 	rows, err := p._query2(sa)
 	if p.Err = err; p.IsErr() {
@@ -404,7 +404,7 @@ func (p *Scope) GetJson(data T) bool {
 
 func (p *Scope) AllJson(lst T) *Scope {
 	p.checkModel(lst)
-	p.Select(p.orm.mapper("Json"))
+	p.Select(p.orm.Mapper().Map2Db("Json"))
 	p.From(p.model.Name)
 	resultv := reflect.ValueOf(lst)
 	if resultv.Kind() != reflect.Ptr || resultv.Elem().Kind() != reflect.Slice {

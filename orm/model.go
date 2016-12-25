@@ -15,10 +15,9 @@ const (
 )
 
 type field struct {
-	Name   string
-	DbName string
-	Type   reflect.Type
-	Field  reflect.Value
+	Name  string
+	Type  reflect.Type
+	Field reflect.Value
 	reflect.StructField
 }
 
@@ -27,6 +26,7 @@ func (p field) IsJsonb() bool {
 }
 
 type model struct {
+	orm    *Orm
 	Name   string
 	Type   reflect.Type
 	Fields map[string]field
@@ -61,22 +61,16 @@ func (p *models) get(m interface{}) *model {
 	}
 
 	mt := &model{
+		orm:    p.orm,
 		Name:   modeltype.Name(),
 		Fields: make(map[string]field, 0),
 		Type:   modeltype,
 	}
 
-	mapper := p.orm.Mapper()
-	mt.dbName = mapper(mt.Name)
-	//	if p.orm.mapper != nil {
-	//		mt.dbName = p.orm.mapper(mt.Name)
-	//	} else {
-	//		mt.dbName = mt.Name
-	//	}
+	mt.dbName = p.orm.Mapper().Map2Db(mt.Name)
 	for i := 0; i < value.NumField(); i++ {
 		fs := modeltype.Field(i)
-		dbName := mapper(fs.Name)
-		mt.Fields[dbName] = field{Name: fs.Name, DbName: dbName, Type: fs.Type, StructField: fs, Field: value.Field(i)}
+		mt.Fields[fs.Name] = field{Name: fs.Name, Type: fs.Type, StructField: fs, Field: value.Field(i)}
 	}
 	p.typeMap[modeltype] = mt
 	p.nameMap[mt.dbName] = mt
@@ -140,9 +134,9 @@ func (p *model) IdVal(obj T) interface{} {
 
 func (p *model) GetValuesForSqlRowScan(cols []string) []interface{} {
 	var values = make([]interface{}, len(cols))
-
+	mapper := p.orm.Mapper().Map2Obj
 	for index, column := range cols {
-		if field, ok := p.Fields[column]; ok {
+		if field, ok := p.Fields[mapper(column)]; ok {
 			if field.IsJsonb() {
 				var vs []byte
 				values[index] = &vs
@@ -170,9 +164,11 @@ func (p *model) GetValuesForSqlRowScan(cols []string) []interface{} {
 
 func (p *model) MapObjFromRowValues(cols []string, values []interface{}) reflect.Value {
 	obj := reflect.New(p.Type).Elem()
+	mapper := p.orm.Mapper().Map2Obj
+
 	for index, column := range cols {
 		value := values[index]
-		if field, ok := p.Fields[column]; ok {
+		if field, ok := p.Fields[mapper(column)]; ok {
 			if field.IsJsonb() {
 				xx := reflect.ValueOf(value).Elem().Interface().([]byte)
 				if len(xx) == 0 {

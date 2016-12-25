@@ -30,14 +30,19 @@ type builder struct {
 	orders    []string
 	fields    []string
 	from      string
-	mapper    MapperFn
+	mapper    Mapper
 	scope     *Scope
 }
 
 func newBuilder(s *Scope) *builder {
 	b := &builder{scope: s}
-	b.mapper = s.orm.mapper
 	return b
+}
+func (p builder) Mapper() Mapper {
+	if p.mapper != nil {
+		return p.mapper
+	}
+	return p.scope.orm.Mapper()
 }
 func (p builder) hasLimit() bool  { return p.limitArgs != nil }
 func (p builder) hasWhere() bool  { return p.whereArgs != nil }
@@ -46,7 +51,7 @@ func (p builder) hasSelect() bool { return len(p.fields) > 0 }
 
 func (p *builder) From(f string) Ibuilder {
 	if p.from == "" {
-		p.from = p.mapper(f)
+		p.from = p.Mapper().Map2Db(f)
 	}
 	return p
 }
@@ -62,7 +67,7 @@ func (p *builder) Where(sql string, args ...interface{}) Ibuilder {
 	return p
 }
 func (p *builder) WhereId(id interface{}) Ibuilder {
-	p.whereArgs = p.initWhereArgs().Append(p.mapper("Id")+"=?", id)
+	p.whereArgs = p.initWhereArgs().Append(p.Mapper().Map2Db("Id")+"=?", id)
 	return p
 }
 func (p *builder) initWhereArgs() *db.SqlArgs {
@@ -81,7 +86,7 @@ func (p *builder) Limit(n, offset int) Ibuilder {
 }
 
 func (p *builder) SqlSelect() (sa *db.SqlArgs) {
-	sql := `SELECT ` + p.buildFields() + " FROM " + p.mapper(p.from)
+	sql := `SELECT ` + p.buildFields() + " FROM " + p.Mapper().Map2Db(p.from)
 	sa = db.NewAgrs(sql)
 	sa = sa.Append2(p.whereArgs)
 	if p.hasOrder() {
@@ -92,22 +97,22 @@ func (p *builder) SqlSelect() (sa *db.SqlArgs) {
 }
 
 func (p *builder) SqlDel() (sa *db.SqlArgs) {
-	sql := `DELETE FROM ` + p.mapper(p.from)
+	sql := `DELETE FROM ` + p.Mapper().Map2Db(p.from)
 	sa = db.NewAgrs(sql)
 	return sa.Append2(p.whereArgs)
 }
 
 func (p *builder) SqlCount() (sa *db.SqlArgs) {
-	sql := `SELECT count(` + p.mapper("Id") + ") FROM " + p.mapper(p.from)
+	sql := `SELECT count(` + p.Mapper().Map2Db("Id") + ") FROM " + p.Mapper().Map2Db(p.from)
 	sa = db.NewAgrs(sql)
 	return sa.Append2(p.whereArgs)
 }
 
 func (p *builder) SqlSaveJson(id GUID, data T) (sa *db.SqlArgs) {
 	buf, _ := json.Marshal(data)
-	_id, _json := p.mapper("Id"), p.mapper("Json")
+	_id, _json := p.Mapper().Map2Db("Id"), p.Mapper().Map2Db("Json")
 	sql := fmt.Sprintf(`Insert into %s(%s,%s) values($1,$2) ON CONFLICT (%s) DO UPDATE SET (%s,%s)=($1,$2)`,
-		p.mapper(p.from), _id, _json, _id, _id, _json)
+		p.Mapper().Map2Db(p.from), _id, _json, _id, _id, _json)
 
 	return db.NewAgrs(sql, id, buf)
 }
