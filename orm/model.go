@@ -196,7 +196,7 @@ func (p *model) MapObjFromRowValues(cols []string, values []interface{}) reflect
 				//					obj.FieldByName(column).Set(reflect.ValueOf(t))
 				//				}
 			} else if v := reflect.ValueOf(value).Elem().Elem(); v.IsValid() {
-				obj.FieldByName(column).Set(v)
+				obj.FieldByName(field.Name).Set(v)
 			}
 		}
 	}
