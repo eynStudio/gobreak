@@ -2,6 +2,8 @@ package gobreak
 
 import (
 	"strings"
+
+	"github.com/eynstudio/gox/x/strx"
 )
 
 type T interface{}
@@ -11,6 +13,7 @@ type GUID string
 func Guid() GUID                 { return GUID(Uuid1().String()) }
 func (p GUID) ID() GUID          { return p }
 func (p GUID) String() string    { return string(p) }
+func (p GUID) Json() string      { return strx.Wrap(string(p), `"`) }
 func (p GUID) StrNoDash() string { return strings.Replace(string(p), "-", "", -1) }
 func (p GUID) IsEmpty() bool     { return len(p) == 0 }
 
