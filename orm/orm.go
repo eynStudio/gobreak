@@ -3,12 +3,17 @@ package orm
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"strings"
 
 	. "github.com/eynstudio/gobreak"
 	"github.com/eynstudio/gobreak/db"
 	"github.com/eynstudio/gobreak/db/filter"
 	"github.com/eynstudio/gobreak/db/meta"
+)
+
+var (
+	orms map[string]*Orm = make(map[string]*Orm, 0)
 )
 
 type Orm struct {
@@ -18,7 +23,15 @@ type Orm struct {
 	models  *models
 }
 
-func Open(driver, source string) (*Orm, error) {
+func GetOrm() *Orm { return orms[""] }
+func GetOrmByName(name string) *Orm {
+	if o, ok := orms[name]; ok {
+		return o
+	}
+	return GetOrm()
+}
+
+func OpenByName(name, driver, source string) (*Orm, error) {
 	var err error
 
 	orm := &Orm{dialect: NewDialect(driver)}
@@ -27,14 +40,22 @@ func Open(driver, source string) (*Orm, error) {
 	if err == nil {
 		err = orm.db.Ping()
 	}
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	orms[name] = orm
 	return orm, err
 }
 
-func MustOpen(driver, source string) *Orm {
-	o, e := Open(driver, source)
+func MustOpenByName(name, driver, source string) *Orm {
+	o, e := OpenByName(name, driver, source)
 	Must(e)
 	return o
 }
+
+func Open(driver, source string) (*Orm, error) { return OpenByName("", driver, source) }
+func MustOpen(driver, source string) *Orm      { return MustOpenByName("", driver, source) }
 
 func (p *Orm) getBuilder(s *Scope) Ibuilder {
 	switch p.dialect.Driver() {
