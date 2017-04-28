@@ -249,7 +249,7 @@ func (p *Scope) PageJson2(lst T, pf *filter.PageFilter) *db.Paging {
 	paging.Total = p.Count(lst)
 
 	if !p.builder.hasSelect() {
-		p.builder.Select(`"Json"`)
+		p.builder.Select(p.orm.Mapper().Map2Db("Json"))
 	}
 	sa := p.builder.SqlSelect()
 

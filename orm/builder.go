@@ -22,6 +22,7 @@ type Ibuilder interface {
 	SqlSaveJson(id GUID, data T) (sa *db.SqlArgs)
 	hasSelect() bool
 	hasWhere() bool
+	Mapper() Mapper
 }
 
 type builder struct {
